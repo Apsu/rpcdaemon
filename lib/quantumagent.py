@@ -83,7 +83,11 @@ class QuantumAgent():
         self.lock.acquire()  # Lock outside RPC callback
         for host, agent in self.agents.items():
             # Check timestamp + allowed down time against current time
-            if agent['heartbeat_timestamp'] + self.downtime < datetime.utcnow():
+            if (
+                    agent['heartbeat_timestamp'] +
+                    self.downtime <
+                    datetime.utcnow()
+            ):
                 # Agent is down!
                 self.logger.debug(
                     '%s/%s(%s): is down.' % (
