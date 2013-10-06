@@ -22,7 +22,6 @@ class Config(RawConfigParser):
         if not section or not section in self.sections():
             raise KeyError('No section %s in config file %s' % (section, self.path))
 
-        import copy
         new = copy.deepcopy(self)
         new._config = dict(new.items(section))
         return new
