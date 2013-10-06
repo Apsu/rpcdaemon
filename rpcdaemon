@@ -1,0 +1,107 @@
+#!/usr/bin/env python2
+
+# General
+from time import sleep
+from signal import signal, getsignal, SIGTERM, SIGINT
+
+# Daemonizing
+from daemon import DaemonContext
+from daemon.pidlockfile import TimeoutPIDLockFile
+
+# Threading
+from threading import Thread
+
+# Oslo
+from ConfigParser import RawConfigParser
+
+# Kombu
+from kombu.mixins import ConsumerMixin
+from kombu import Connection
+
+# My logger wrapper
+from rpcdaemon.lib.logger import Logger
+
+
+# Consumer worker
+class Worker(ConsumerMixin, Thread):
+    def __init__(self, connection, plugins=[]):
+        Thread.__init__(self, target=self.run)  # MRO picks mixin.run
+        self.connection = connection
+        self.queues = [plugin.queue for plugin in plugins]
+        self.callbacks = [plugin.update for plugin in plugins]
+
+    def get_consumers(self, Consumer, channel):
+        return [Consumer(queues=self.queues, callbacks=self.callbacks)]
+
+
+# State monitor
+class Monitor(DaemonContext):
+    def __init__(self):
+        # Parse config
+        self.config = Config('/usr/local/etc/rpcdaemon.conf')
+
+        # Initialize logger
+        self.logger = Logger(
+            name='rpcdaemon',
+            level=conf['loglevel'],
+            path='/var/log/rpcdaemon.log'
+        )
+
+        # TODO: Make PIDfile moar better -- newer lockfile!
+        # PID lockfile
+        self.pidfile = TimeoutPIDLockFile(
+            '/var/run/rpcdaemon',
+            acquire_timeout=0,
+            threaded=False
+        )
+
+        # Initialize daemon
+        DaemonContext.__init__(
+            self,
+            files_preserve=[self.logger.handler.stream],
+            #uid=pwd.getpwnam('quantum').pw_uid,
+            #gid=grp.getgrnam('quantum').gr_gid,
+            #working_directory='/var/lib/quantum',
+            pidfile=self.pidfile
+        )
+
+    def open(self):
+        # Call super
+        DaemonContext.open(self)
+        self.logger.info('Starting...')
+
+        # RPC connection
+        self.connection = Connection(self.config['rabbit_host'])
+
+        # TODO: Import plugin modules listed in conf
+        # plugins = ...
+
+        # Create plugin objects
+        self.plugins = [
+            plugin(self.connection, self.config, self.logger.handler)
+            for plugin in plugins
+        ]
+
+        # Setup worker with plugins and crank it up
+        self.worker = Worker(self.connection, self.plugins)
+        self.worker.start()
+
+        self.logger.info('Started.')
+
+    def close(self):
+        # Emulate super's close() behavior
+        if self.is_open:
+            self.logger.info('Stopping...')
+            self.worker.should_stop = True
+            self.worker.join()
+            self.logger.info('Stopped.')
+
+        DaemonContext.close(self)
+
+# Entry point
+if __name__ == '__main__':
+    with Monitor() as monitor:
+        while monitor.worker.is_alive():
+            monitor.logger.debug('Checking states.')
+            monitor.check_states()
+            sleep(monitor.timeout)
