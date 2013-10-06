@@ -11,7 +11,12 @@ class Config(RawConfigParser):
             if section in self.sections():
                 self._config = dict(self.items(section))
             else:
-                raise KeyError('No section %s in config file %s' % (section, path))
+                raise KeyError(
+                    'No section %s in config file %s' % (
+                        section,
+                        path
+                    )
+                )
         else:
             raise IOError('Failed to parse config file %s' % path)
 
@@ -20,7 +25,12 @@ class Config(RawConfigParser):
 
     def section(self, section=None):
         if not section or not section in self.sections():
-            raise KeyError('No section %s in config file %s' % (section, self.path))
+            raise KeyError(
+                'No section %s in config file %s' % (
+                    section,
+                    self.path
+                )
+            )
 
         new = copy.deepcopy(self)
         new._config = dict(new.items(section))
