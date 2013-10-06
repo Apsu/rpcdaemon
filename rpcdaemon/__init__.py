@@ -6,7 +6,7 @@ from signal import signal, getsignal, SIGTERM, SIGINT
 
 # Daemonizing
 from daemon import DaemonContext
-from daemon.pidlockfile import TimeoutPIDLockFile
+from lockfile.pidlockfile import PIDLockFile
 
 # Threading
 from threading import Thread
@@ -47,17 +47,13 @@ class Monitor(DaemonContext):
             path='/var/log/rpcdaemon.log'
         )
 
-        # TODO: Make PIDfile moar better -- newer lockfile!
         # PID lockfile
-        self.pidfile = TimeoutPIDLockFile(
-            '/var/run/rpcdaemon',
-            acquire_timeout=0,
-            threaded=False
-        )
+        self.pidfile = PIDLockFile('/var/run/rpcdaemon.pid')
 
         # Initialize daemon
         DaemonContext.__init__(
             self,
+            detach_process=True,
             files_preserve=[self.logger.handler.stream],
             #uid=pwd.getpwnam('quantum').pw_uid,
             #gid=grp.getgrnam('quantum').gr_gid,
@@ -99,9 +95,13 @@ class Monitor(DaemonContext):
         DaemonContext.close(self)
 
 # Entry point
-if __name__ == '__main__':
+def main():
     with Monitor() as monitor:
         while monitor.worker.is_alive():
             monitor.logger.debug('Checking states.')
             monitor.check_states()
             sleep(monitor.timeout)
+
+# If called directly
+if __name__ == '__main__':
+    main()
