@@ -37,13 +37,10 @@ class QuantumAgent():
         )
 
         # Populate agents and states
-        for agent in self.client.list_agents(
-                agent_type=self.agent_type
-        )['agents']:
+        agents = self.client.list_agents(agent_type=self.agent_type)['agents']
+        for agent in agents:
             self.agents[agent['host']] = {
-                'heartbeat_timestamp': dateparse(
-                    agent['heartbeat_timestamp']
-                ),
+                'heartbeat_timestamp': dateparse(agent['heartbeat_timestamp']),
                 'alive': agent['alive']
             }
 
