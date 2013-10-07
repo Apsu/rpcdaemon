@@ -52,11 +52,11 @@ class DHCPAgent(QuantumAgent, RPC):
         )
 
     # DHCP specific handler
-    def handle(self, host, agent, state):
+    def handle(self, agent, state):
         # All alive agents
         targets = [
             target for target in self.agents.values()
-            if not target['host'] == host
+            if not target['id'] == agent['id']
             and target['alive']
         ] if not state else self.agents.values()
 
@@ -87,4 +87,4 @@ class DHCPAgent(QuantumAgent, RPC):
                 )
         # No agents, any networks?
         elif networks:
-            self.logger.warn('No agents found to schedule networks.')
+            self.logger.warn('No agents found to schedule networks to.')

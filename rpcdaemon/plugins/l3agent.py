@@ -52,32 +52,54 @@ class L3Agent(QuantumAgent, RPC):
         )
 
     # L3 specific handler
-    def handle(self, host, agent, state):
+    def handle(self, agent, state):
+        # All alive agents
         targets = [
             target for target in self.agents.values()
-            if not target['host'] == host
+            if not target['id'] == agent['id']
             and target['alive']
         ] if not state else self.agents.values()
-        routers = self.client.list_routers_on_l3_agent(agent['id'])['routers']
 
-        # Any agents alive?
-        if targets:
-            # Map my routers to other agents
-            mapping = zip(routers, cycle(targets))
-
-            # And move them
-            for router, target in mapping:
-                self.logger.info(
-                    'Rescheduling %s(%s) -> %s/%s.' % (
-                        router['name'],
+        # If agent is down, remove routers first
+        if not state:
+            for router in (
+                self.client.list_routers_on_l3_agent(agent['id'])['routers']
+            ):
+                self.logging.info(
+                    'Removing router %s from %s/%s' % (
                         router['id'],
-                        target['host'],
-                        target['type']
+                        agent['host'],
+                        agent['agent_type']
                     )
                 )
                 self.client.remove_router_from_l3_agent(
                     agent['id'],
                     router['id']
+                )
+
+        # Routers not already on agents
+        routers = [
+            router for router in
+            self.client.list_routers()['routers']
+            for target in targets
+            if not router in
+            self.client.list_routers_on_l3_agent(target['id'])['routers']
+        ]
+
+        # Any agents alive?
+        if targets:
+            # Map routers to agents
+            mapping = zip(routers, cycle(targets))
+
+            # And schedule them
+            for router, target in mapping:
+                self.logger.info(
+                    'Scheduling %s(%s) -> %s/%s.' % (
+                        router['name'],
+                        router['id'],
+                        target['host'],
+                        target['agent_type']
+                    )
                 )
                 self.client.add_router_to_l3_agent(
                     target['id'],
@@ -85,9 +107,4 @@ class L3Agent(QuantumAgent, RPC):
                 )
         # No agents, any routers?
         elif routers:
-            self.logger.warn(
-                'No agents found to reschedule routers from %s/%s(%s).' % (
-                    host,
-                    agent['type']
-                )
-            )
+            self.logger.warn('No agents found to schedule routers to.')

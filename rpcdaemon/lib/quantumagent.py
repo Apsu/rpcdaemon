@@ -18,7 +18,7 @@ class QuantumAgent():
         # Store what type of agent we are
         self.agent_type = agent_type
 
-        # Dict of agent state information, keyed by host
+        # Dict of agent state information, keyed by id
         self.agents = {}
 
         # Lock for self.agents access
@@ -37,15 +37,18 @@ class QuantumAgent():
         )
 
         # Populate agents and states
-        agents = self.client.list_agents(agent_type=self.agent_type)['agents']
-        for agent in agents:
+        agents = {
+            agent['id']: agent for agent in
+            self.client.list_agents(agent_type=self.agent_type)['agents']
+        }
+        for agent in agents.values():
             agent['heartbeat_timestamp'] = dateparse(
                 agent['heartbeat_timestamp']
             )
-            self.agents[agent['host']] = agent
+            self.agents[agent['id']] = agent
 
     # Empty default handler
-    def handle(self, host, agent, state):
+    def handle(self, agent, state):
         pass
 
     # RPC Callback to update agents and states
@@ -57,16 +60,27 @@ class QuantumAgent():
 
             if state['agent_type'] == self.agent_type:
                 self.lock.acquire()  # Lock inside RPC callback
-                if not host in self.agents:
+                if not host in [
+                        agent['host'] for agent in self.agents.values()
+                ]:
                     # Get full agent info
-                    self.agents[host] = self.client.list_agents(
-                        host=host,
-                        agent_type=self.agent_type
-                    )['agents'][0]
+                    self.agents.update(
+                        {
+                            agent['id']: agent for agent in
+                            self.client.list_agents(
+                                host=host,
+                                agent_type=self.agent_type
+                            )['agents']
+                        }
+                    )
 
                 # Update state since we got a message
-                self.agents[host]['heartbeat_timestamp'] = dateparse(time)
-                self.agents[host]['alive'] = True
+                for agent in self.agents.values():
+                    self.agents[agent['id']]['heartbeat_timestamp'] = (
+                        dateparse(time)
+                    )
+                    self.agents[agent['id']]['alive'] = True
+
                 self.lock.release()  # Unlock inside RPC callback
 
         # Ack that sucker
@@ -75,7 +89,7 @@ class QuantumAgent():
     # Called in loop
     def check(self):
         self.lock.acquire()  # Lock outside RPC callback
-        for host, agent in self.agents.items():
+        for agent in self.agents.values():
             # Check timestamp + allowed down time against current time
             if (
                     agent['heartbeat_timestamp'] +
@@ -85,26 +99,26 @@ class QuantumAgent():
                 # Agent is down!
                 self.logger.debug(
                     '%s/%s(%s): is down.' % (
-                        host,
+                        agent['host'],
                         agent['agent_type'],
                         agent['id']
                     )
                 )
-                self.agents[host]['alive'] = False
+                self.agents[agent['host']]['alive'] = False
 
                 # Handle down agent
-                self.handle(host, agent, False)
+                self.handle(agent, False)
             else:
                 # Agent is up!
                 self.logger.debug(
                     '%s/%s(%s): is up.' % (
-                        host,
+                        agent['host'],
                         agent['agent_type'],
                         agent['id']
                     )
                 )
 
                 # Handle up agent
-                self.handle(host, agent, True)
+                self.handle(agent, True)
 
         self.lock.release()  # Unlock outside RPC callback
