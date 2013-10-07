@@ -31,7 +31,10 @@ class Worker(ConsumerMixin, Thread):
         self.callbacks = [plugin.update for plugin in plugins]
 
     def get_consumers(self, Consumer, channel):
-        return [Consumer(queues=self.queues, callbacks=self.callbacks)]
+        return [
+            Consumer(queues=[queue], callbacks=[callback])
+            for (queue, callback) in zip(self.queues, self.callbacks)
+        ]
 
 
 # State monitor
@@ -53,6 +56,7 @@ class Monitor(DaemonContext):
         # TOOD: plugin.check thread pool?
         self.timeout = 1
 
+        # Clamp in case we exit before worker exists
         self.worker = None
 
         # Initialize daemon
@@ -71,13 +75,13 @@ class Monitor(DaemonContext):
         sys.stdout = sys.stderr = self.logger.handler.stream
 
         # Needfuls.doit()
-        self.logger.info('Starting...')
+        self.logger.info('Initializing...')
 
         # RPC connection
         self.connection = Connection(self.config['rpchost'])
 
         self.logger.info('Loading plugins...')
-        # Create plugin objects
+        # Import and create plugin objects
         self.plugins = [
             plugin(self.connection, self.config, self.logger.handler)
             for plugin in [
@@ -92,7 +96,7 @@ class Monitor(DaemonContext):
         ]
 
         # Setup worker with plugins and crank it up
-        self.logger.info('Working...')
+        self.logger.info('Starting worker...')
         self.worker = Worker(self.connection, self.plugins)
         self.worker.start()
         self.logger.info('Started.')
@@ -103,8 +107,8 @@ class Monitor(DaemonContext):
 
     def close(self):
         # We might get called more than once, or before worker exists
-        if self.is_open and self.worker:
-            self.logger.info('Stopping...')
+        if self.is_open and self.worker and self.worker.is_alive():
+            self.logger.info('Stopping worker...')
             self.worker.should_stop = True
             self.worker.join()
             self.logger.info('Stopped.')
@@ -116,7 +120,7 @@ class Monitor(DaemonContext):
 def main():
     with Monitor() as monitor:
         while monitor.worker.is_alive():
-            monitor.logger.debug('Dispatching plugin checks.')
+            monitor.logger.debug('Dispatching plugin checks...')
             monitor.check()
             # TODO: plugin.check thread pool?
             sleep(monitor.timeout)

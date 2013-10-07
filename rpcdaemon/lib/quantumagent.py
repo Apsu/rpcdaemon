@@ -103,4 +103,5 @@ class QuantumAgent():
                 )
 
                 # Don't need to update state, RPC callback did that
+
         self.lock.release()  # Unlock outside RPC callback

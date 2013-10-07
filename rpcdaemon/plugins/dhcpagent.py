@@ -50,8 +50,6 @@ class DHCPAgent(QuantumAgent, RPC):
             }
         )
 
-        self.logger.debug(self.queue)
-
     # DHCP specific handler
 #    def handle(self, host, agent):
 #        others = [
