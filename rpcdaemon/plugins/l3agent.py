@@ -16,15 +16,22 @@ from rpcdaemon.lib.config import Config
 
 # Specific L3 agent handler
 class L3Agent(QuantumAgent, RPC):
-    def __init__(self, connection, conf, handler=None):
+    def __init__(self, connection, config, handler=None):
         # Grab a copy of our config section
-        self.conf = conf.section('L3Agent')
+        self.config = config.section('L3Agent')
+
+        # Initialize logger
+        self.logger = Logger(
+            name='l3agent',
+            level=self.config['loglevel'],
+            handler=handler
+        )
 
         # Parse quantum.conf
-        self.qconf = Config(file=conf['conffile'], section='AGENT')
+        self.qconfig = Config(self.config['conffile'], 'AGENT')
 
         # Initialize super
-        QuantumAgent.__init__(self, qconf=qconf, agent_type='L3 Agent')
+        QuantumAgent.__init__(self, self.qconfig, 'L3 agent')
 
         # Initialize RPC bits
         RPC.__init__(
@@ -41,13 +48,6 @@ class L3Agent(QuantumAgent, RPC):
                 'durable': False,
                 'routing_key': 'q-plugin'
             }
-        )
-
-        # Initialize logger
-        self.logger = Logger(
-            name='l3agent',
-            level=conf['loglevel'],
-            handler=handler
         )
 
     # L3 specific handler

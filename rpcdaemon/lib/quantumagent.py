@@ -11,9 +11,9 @@ from quantumclient.v2_0.client import Client
 
 # Generalized quantum agent handler
 class QuantumAgent():
-    def __init__(self, qconf, agent_type):
+    def __init__(self, config, agent_type):
         # Config blob for us
-        self.qconf = qconf
+        self.config = config
 
         # Store what type of agent we are
         self.agent_type = agent_type
@@ -25,24 +25,22 @@ class QuantumAgent():
         self.lock = Semaphore()
 
         # Agent timeout helpers
-        self.downtime = timedelta(seconds=int(self.qconf['agent_down_time']))
-        self.timeout = int(self.qconf['agent_down_time'])
+        self.downtime = timedelta(seconds=int(self.config['agent_down_time']))
+        self.timeout = int(self.config['agent_down_time'])
 
         # Initialize quantum client
         self.client = Client(
-            username=self.qconf['admin_user'],
-            password=self.qconf['admin_password'],
-            tenant_name=self.qconf['admin_tenant_name'],
-            auth_url=self.qconf['auth_url']
+            username=self.config['admin_user'],
+            password=self.config['admin_password'],
+            tenant_name=self.config['admin_tenant_name'],
+            auth_url=self.config['auth_url']
         )
 
         # Populate agents and states
         agents = self.client.list_agents(agent_type=self.agent_type)['agents']
         for agent in agents:
-            self.agents[agent['host']] = {
-                'heartbeat_timestamp': dateparse(agent['heartbeat_timestamp']),
-                'alive': agent['alive']
-            }
+            agent['heartbeat_timestamp'] = dateparse(agent['heartbeat_timestamp'])
+            self.agents[agent['host']] = agent
 
     # Empty default handler
     def handle(self, host, agent):
@@ -68,9 +66,6 @@ class QuantumAgent():
                 self.agents[host]['heartbeat_timestamp'] = dateparse(time)
                 self.agents[host]['alive'] = True
                 self.lock.release()  # Unlock inside RPC callback
-        else:
-            # Skip other RPC methods
-            pass
 
         # Ack that sucker
         message.ack()
@@ -89,11 +84,11 @@ class QuantumAgent():
                 self.logger.debug(
                     '%s/%s(%s): is down.' % (
                         host,
-                        agent['type'],
+                        agent['agent_type'],
                         agent['id']
                     )
                 )
-                self.worker.agents[host]['alive'] = False
+                self.agents[host]['alive'] = False
 
                 # Handle down agent
                 self.handle(host, agent)
@@ -102,7 +97,7 @@ class QuantumAgent():
                 self.logger.debug(
                     '%s/%s(%s): is up.' % (
                         host,
-                        agent['type'],
+                        agent['agent_type'],
                         agent['id']
                     )
                 )

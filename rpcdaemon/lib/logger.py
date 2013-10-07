@@ -12,6 +12,7 @@ class Logger(logging.Logger):
             handler=None
     ):
         # Call super
-        logging.Logger(self, name, level)
-        self.setFormatter(logging.Formatter(format))
-        self.addHandler(handler if handler else logging.FileHandler(path))
+        logging.Logger.__init__(self, name, level)
+        self.handler = handler if handler else logging.FileHandler(path)
+        self.handler.setFormatter(logging.Formatter(format))
+        self.addHandler(self.handler)

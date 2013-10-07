@@ -1,5 +1,5 @@
 # Kombu
-from kombu import Exchange, Queue
+from kombu import Exchange, Queue, Connection
 
 
 class RPC():
@@ -8,8 +8,6 @@ class RPC():
         self.connection = connection
 
         # Initialize RPC bindings
-        exopts.setdefault(None)
-        qopts.setdefault(None)
         exopts['channel'] = self.connection.channel()
         self.exchange = Exchange(**exopts)
         qopts['exchange'] = self.exchange
