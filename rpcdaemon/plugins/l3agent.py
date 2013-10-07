@@ -1,5 +1,6 @@
 # General
 from uuid import uuid4
+from itertools import cycle
 
 # Quantum Agent superclass
 from rpcdaemon.lib.quantumagent import QuantumAgent
@@ -51,27 +52,27 @@ class L3Agent(QuantumAgent, RPC):
         )
 
     # L3 specific handler
-    def handle(self, host, agent):
-        others = [
-            other for other in self.agents
-            if not host['host'] == host
-            and other['alive']
-        ]
+    def handle(self, host, agent, state):
+        targets = [
+            target for target in self.agents.values()
+            if not target['host'] == host
+            and target['alive']
+        ] if not state else self.agents.values()
         routers = self.client.list_routers_on_l3_agent(agent['id'])['routers']
 
-        # Any other agents alive?
-        if others:
+        # Any agents alive?
+        if targets:
             # Map my routers to other agents
-            mapping = zip(routers, cycle(others))
+            mapping = zip(routers, cycle(targets))
 
             # And move them
-            for router, other in mapping:
+            for router, target in mapping:
                 self.logger.info(
                     'Rescheduling %s(%s) -> %s/%s.' % (
                         router['name'],
                         router['id'],
-                        other['host'],
-                        other['type']
+                        target['host'],
+                        target['type']
                     )
                 )
                 self.client.remove_router_from_l3_agent(
@@ -79,7 +80,7 @@ class L3Agent(QuantumAgent, RPC):
                     router['id']
                 )
                 self.client.add_router_to_l3_agent(
-                    other['id'],
+                    target['id'],
                     {'router_id': router['id']}
                 )
         # No agents, any routers?

@@ -45,7 +45,7 @@ class QuantumAgent():
             self.agents[agent['host']] = agent
 
     # Empty default handler
-    def handle(self, host, agent):
+    def handle(self, host, agent, state):
         pass
 
     # RPC Callback to update agents and states
@@ -93,7 +93,7 @@ class QuantumAgent():
                 self.agents[host]['alive'] = False
 
                 # Handle down agent
-                self.handle(host, agent)
+                self.handle(host, agent, False)
             else:
                 # Agent is up!
                 self.logger.debug(
@@ -104,6 +104,7 @@ class QuantumAgent():
                     )
                 )
 
-                # Don't need to update state, RPC callback did that
+                # Handle up agent
+                self.handle(host, agent, True)
 
         self.lock.release()  # Unlock outside RPC callback

@@ -1,5 +1,6 @@
 # General
 from uuid import uuid4
+from itertools import product
 
 # Quantum Agent superclass
 from rpcdaemon.lib.quantumagent import QuantumAgent
@@ -51,42 +52,39 @@ class DHCPAgent(QuantumAgent, RPC):
         )
 
     # DHCP specific handler
-#    def handle(self, host, agent):
-#        others = [
-#            other for other in self.agents
-#            if not host['host'] == host
-#            and other['alive']
-#        ]
-#        routers = self.client.list_routers_on_l3_agent(agent['id'])['routers']
-#
-#        # Any other agents alive?
-#        if others:
-#            # Map my routers to other agents
-#            mapping = zip(routers, cycle(others))
-#
-#            # And move them
-#            for router, other in mapping:
-#                self.logger.info(
-#                    'Rescheduling %s(%s) -> %s/%s.' % (
-#                        router['name'],
-#                        router['id'],
-#                        other['host'],
-#                        other['type']
-#                    )
-#                )
-#                self.client.remove_router_from_l3_agent(
-#                    agent['id'],
-#                    router['id']
-#                )
-#                self.client.add_router_to_l3_agent(
-#                    other['id'],
-#                    {'router_id': router['id']}
-#                )
-#        # No agents, any routers?
-#        elif routers:
-#            self.logger.warn(
-#                'No agents found to reschedule routers from %s/%s(%s).' % (
-#                    host,
-#                    agent['type']
-#                )
-#            )
+    def handle(self, host, agent, state):
+        # All alive agents
+        targets = [
+            target for target in self.agents.values()
+            if not target['host'] == host
+            and target['alive']
+        ] if not state else self.agents.values()
+
+        # Map networks to all agents they're not already on
+        mapping = [
+            (network, target) for network in
+            self.client.list_networks()['networks']
+            for target in targets
+            if not network in
+            self.client.list_networks_on_dhcp_agent(target['id'])['networks']
+        ]
+
+        # Any agents alive?
+        if targets:
+            # And schedule them
+            for network, target in mapping:
+                self.logger.info(
+                    'Scheduling %s(%s) -> %s/%s.' % (
+                        network['name'],
+                        network['id'],
+                        target['host'],
+                        target['agent_type']
+                    )
+                )
+                self.client.add_network_to_dhcp_agent(
+                    target['id'],
+                    {'network_id': network['id']}
+                )
+        # No agents, any networks?
+        elif networks:
+            self.logger.warn('No agents found to schedule networks.')
