@@ -7,7 +7,6 @@ from signal import signal, getsignal, SIGTERM, SIGINT
 
 # Daemonizing
 from daemon import DaemonContext
-from lockfile.pidlockfile import PIDLockFile
 
 # Threading
 from threading import Thread
@@ -19,6 +18,7 @@ from kombu import Connection
 # My libs
 from rpcdaemon.lib.logger import Logger
 from rpcdaemon.lib.config import Config
+from rpcdaemon.lib.pidfile import PIDFile
 
 
 # Consumer worker
@@ -51,7 +51,7 @@ class Monitor(DaemonContext):
         )
 
         # PID lockfile
-        self.pidfile = PIDLockFile('/var/run/rpcdaemon.pid', timeout=0)
+        self.pidfile = PIDFile('/var/run/rpcdaemon.pid')
 
         # TOOD: plugin.check thread pool?
         self.timeout = 1
