@@ -28,7 +28,7 @@ class DHCPAgent(QuantumAgent, RPC):
             handler=handler
         )
 
-        # Parse quantum.conf
+        # Parse agent conf
         self.qconfig = Config(self.config['conffile'], 'AGENT')
 
         # Initialize super
@@ -56,29 +56,68 @@ class DHCPAgent(QuantumAgent, RPC):
         # All alive agents
         targets = [
             target for target in self.agents.values()
-            if not target['id'] == agent['id']
-            and target['alive']
-        ] if not state else self.agents.values()
+            if target['alive']
+        ]
 
-        # Map networks to all agents they're not already on
-        mapping = [
-            (network, target) for network in
-            self.client.list_networks()['networks']
-            for target in targets
-            if not network in
+        # If agent is down, remove networks first
+        if not state:
+            for network in (
+                self.client.list_networks_on_dhcp_agent(
+                    agent['id']
+                )['networks']
+            ):
+                self.logger.info(
+                    'Removing network %s from %s/%s [%s]' % (
+                        network['id'],
+                        agent['host'],
+                        agent['agent_type'],
+                        str(agent['id'])
+                    )
+                )
+                self.client.remove_network_from_dhcp_agent(
+                    agent['id'],
+                    network['id']
+                )
+
+        self.logger.debug(
+            'Targets: %s' % [str(target['id']) for target in targets]
+        )
+
+        # Networks on agents
+        binds = [
+            network for target in targets
+            for network in
             self.client.list_networks_on_dhcp_agent(target['id'])['networks']
         ]
 
+        self.logger.debug(
+            'Bound Networks: %s' % [str(bind['id']) for bind in binds]
+        )
+
+        # Networks not on agents
+        networks = [
+            network
+            for network in self.client.list_networks()['networks']
+            if not network in binds
+        ]
+
+        self.logger.debug(
+            'Free Networks: %s' % [str(network['id']) for network in networks]
+        )
+
         # Any agents alive?
         if targets:
+            mapping = product(networks, targets)
+
             # And schedule them
             for network, target in mapping:
                 self.logger.info(
-                    'Scheduling %s(%s) -> %s/%s.' % (
+                    'Scheduling %s [%s] -> %s/%s [%s].' % (
                         network['name'],
-                        network['id'],
+                        str(network['id']),
                         target['host'],
-                        target['agent_type']
+                        target['agent_type'],
+                        str(target['id'])
                     )
                 )
                 self.client.add_network_to_dhcp_agent(

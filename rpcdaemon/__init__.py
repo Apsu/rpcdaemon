@@ -98,6 +98,7 @@ class Monitor(DaemonContext):
         # Setup worker with plugins and crank it up
         self.logger.info('Starting worker...')
         self.worker = Worker(self.connection, self.plugins)
+        self.worker.daemon = True  # Daemon thread
         self.worker.start()
         self.logger.info('Started.')
 
@@ -110,7 +111,11 @@ class Monitor(DaemonContext):
         if self.is_open and self.worker and self.worker.is_alive():
             self.logger.info('Stopping worker...')
             self.worker.should_stop = True
-            self.worker.join()
+            self.worker.join(5)  # Wait up to 5 seconds
+            if self.worker.is_alive():
+                self.logger.warn(
+                    'Error stopping worker. Shutting down uncleanly.'
+                )
             self.logger.info('Stopped.')
 
         DaemonContext.close(self)

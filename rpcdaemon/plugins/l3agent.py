@@ -28,7 +28,7 @@ class L3Agent(QuantumAgent, RPC):
             handler=handler
         )
 
-        # Parse quantum.conf
+        # Parse agent config
         self.qconfig = Config(self.config['conffile'], 'AGENT')
 
         # Initialize super
@@ -56,20 +56,20 @@ class L3Agent(QuantumAgent, RPC):
         # All alive agents
         targets = [
             target for target in self.agents.values()
-            if not target['id'] == agent['id']
-            and target['alive']
-        ] if not state else self.agents.values()
+            if target['alive']
+        ]
 
         # If agent is down, remove routers first
         if not state:
             for router in (
                 self.client.list_routers_on_l3_agent(agent['id'])['routers']
             ):
-                self.logging.info(
-                    'Removing router %s from %s/%s' % (
+                self.logger.info(
+                    'Removing router %s from %s/%s [%s]' % (
                         router['id'],
                         agent['host'],
-                        agent['agent_type']
+                        agent['agent_type'],
+                        str(agent['id'])
                     )
                 )
                 self.client.remove_router_from_l3_agent(
@@ -77,14 +77,31 @@ class L3Agent(QuantumAgent, RPC):
                     router['id']
                 )
 
-        # Routers not already on agents
-        routers = [
-            router for router in
-            self.client.list_routers()['routers']
-            for target in targets
-            if not router in
+        self.logger.debug(
+            'Targets: %s' % [str(target['id']) for target in targets]
+        )
+
+        # Routers on agents
+        binds = [
+            router for target in targets
+            for router in
             self.client.list_routers_on_l3_agent(target['id'])['routers']
         ]
+
+        self.logger.debug(
+            'Bound Routers: %s' % [str(bind['id']) for bind in binds]
+        )
+
+        # Routers not on agents
+        routers = [
+            router
+            for router in self.client.list_routers()['routers']
+            if not router in binds
+        ]
+
+        self.logger.debug(
+            'Free Routers: %s' % [str(router['id']) for router in routers]
+        )
 
         # Any agents alive?
         if targets:
@@ -94,11 +111,12 @@ class L3Agent(QuantumAgent, RPC):
             # And schedule them
             for router, target in mapping:
                 self.logger.info(
-                    'Scheduling %s(%s) -> %s/%s.' % (
+                    'Scheduling %s [%s] -> %s/%s [%s].' % (
                         router['name'],
-                        router['id'],
+                        str(router['id']),
                         target['host'],
-                        target['agent_type']
+                        target['agent_type'],
+                        str(target['id'])
                     )
                 )
                 self.client.add_router_to_l3_agent(

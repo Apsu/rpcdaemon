@@ -37,6 +37,7 @@ class QuantumAgent():
         )
 
         # Populate agents and states
+        self.logger.info('Populating agents...')
         agents = {
             agent['id']: agent for agent in
             self.client.list_agents(agent_type=self.agent_type)['agents']
@@ -46,6 +47,10 @@ class QuantumAgent():
                 agent['heartbeat_timestamp']
             )
             self.agents[agent['id']] = agent
+
+        self.logger.debug(
+            'Agents: %s' % [str(agent['id']) for agent in self.agents.values()]
+        )
 
     # Empty default handler
     def handle(self, agent, state):
@@ -58,24 +63,38 @@ class QuantumAgent():
             time = body['args']['time']
             host = state['host']
 
-            if state['agent_type'] == self.agent_type:
+            # Accept our agent type only; '' for all agent types
+            if not self.agent_type or state['agent_type'] == self.agent_type:
                 self.lock.acquire()  # Lock inside RPC callback
-                if not host in [
-                        agent['host'] for agent in self.agents.values()
-                ]:
+
+                # Agents to update if we've seen host/type before
+                updates = [
+                    agent for agent in self.agents.values()
+                    if agent['host'] == host
+                    and agent['agent_type'] == state['agent_type']
+                ]
+
+                # Haven't seen this host/type before?
+                if not updates:
                     # Get full agent info
-                    self.agents.update(
-                        {
-                            agent['id']: agent for agent in
-                            self.client.list_agents(
-                                host=host,
-                                agent_type=self.agent_type
-                            )['agents']
-                        }
-                    )
+                    updates = [
+                        agent for agent in
+                        self.client.list_agents(
+                            host=host,
+                            agent_type=state['agent_type']
+                        )['agents']
+                    ]
+
+                self.logger.debug(
+                    'Updates: %s' % [
+                        str(update['host']) + '/' + str(update['agent_type'])
+                        for update in updates
+                    ]
+                )
 
                 # Update state since we got a message
-                for agent in self.agents.values():
+                for agent in updates:
+                    self.agents[agent['id']].update(state)
                     self.agents[agent['id']]['heartbeat_timestamp'] = (
                         dateparse(time)
                     )
@@ -97,21 +116,21 @@ class QuantumAgent():
                     datetime.utcnow()
             ):
                 # Agent is down!
-                self.logger.debug(
-                    '%s/%s(%s): is down.' % (
+                self.logger.warn(
+                    '%s/%s [%s]: is down.' % (
                         agent['host'],
                         agent['agent_type'],
                         agent['id']
                     )
                 )
-                self.agents[agent['host']]['alive'] = False
+                self.agents[agent['id']]['alive'] = False
 
                 # Handle down agent
                 self.handle(agent, False)
             else:
                 # Agent is up!
                 self.logger.debug(
-                    '%s/%s(%s): is up.' % (
+                    '%s/%s [%s]: is up.' % (
                         agent['host'],
                         agent['agent_type'],
                         agent['id']
