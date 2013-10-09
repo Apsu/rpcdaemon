@@ -41,7 +41,7 @@ class Worker(ConsumerMixin, Thread):
 class Monitor(DaemonContext):
     def __init__(self):
         # Parse config
-        self.config = Config('/usr/local/etc/rpcdaemon.conf', 'Daemon')
+        self.config = Config('/etc/rpcdaemon/rpcdaemon.conf', 'Daemon')
 
         # Initialize logger
         self.logger = Logger(
