@@ -54,10 +54,10 @@ class L3Agent(QuantumAgent, RPC):
     # L3 specific handler
     def handle(self, agent, state):
         # All alive agents
-        targets = [
-            target for target in self.agents.values()
+        targets = {
+            target['id']:target for target in self.agents.values()
             if target['alive']
-        ]
+        }
 
         # If agent is down, remove routers first
         if not state:
@@ -77,45 +77,48 @@ class L3Agent(QuantumAgent, RPC):
                     router['id']
                 )
 
-        self.logger.debug('Targets: %s' % targets)
+        self.logger.debug('Targets: %s' % targets.keys())
 
-        # Routers on agents
-        binds = [
-            router for target in targets
-            for router in
-            self.client.list_routers_on_l3_agent(target['id'])['routers']
-        ]
-
-        self.logger.debug('Bound Routers: %s' % binds)
-
-        # Routers not on agents
-        routers = [
-            router
-            for router in self.client.list_routers()['routers']
-            if not router in binds
-        ]
-
-        self.logger.debug('Free Routers: %s' % routers)
 
         # Any agents alive?
         if targets:
-            # Map routers to agents
+            # Get routers on agents
+            binds = {
+                router['id']:router for target in targets
+                for router in
+                self.client.list_routers_on_l3_agent(target)['routers']
+            }
+
+            self.logger.debug('Bound Routers: %s' % binds.keys())
+
+            # And routers not on agents
+            routers = {
+                router['id']:router
+                for router in self.client.list_routers()['routers']
+                if not router['id'] in binds
+            }
+
+            self.logger.debug('Free Routers: %s' % routers.keys())
+
+            # Map free routers to agents
             mapping = zip(routers, cycle(targets))
+
+            self.logger.debug('Mapping: %s' % mapping)
 
             # And schedule them
             for router, target in mapping:
                 self.logger.info(
                     'Scheduling %s [%s] -> %s/%s [%s].' % (
-                        router['name'],
-                        str(router['id']),
-                        target['host'],
-                        target['agent_type'],
-                        str(target['id'])
+                        routers[router]['name'],
+                        str(router),
+                        targets[target]['host'],
+                        targets[target]['agent_type'],
+                        str(target)
                     )
                 )
                 self.client.add_router_to_l3_agent(
-                    target['id'],
-                    {'router_id': router['id']}
+                    target,
+                    {'router_id': router}
                 )
         # No agents, any routers?
         elif routers:
