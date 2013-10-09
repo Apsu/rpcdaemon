@@ -1,5 +1,6 @@
 # General
 import json
+from uuid import uuid4
 
 # RPC superclass
 from rpcdaemon.lib.rpc import RPC
