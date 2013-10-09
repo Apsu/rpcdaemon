@@ -1,10 +1,5 @@
 # General
 import json
-from uuid import uuid4
-from itertools import cycle
-
-# Quantum Agent superclass
-from rpcdaemon.lib.quantumagent import QuantumAgent
 
 # RPC superclass
 from rpcdaemon.lib.rpc import RPC
@@ -17,7 +12,7 @@ from rpcdaemon.lib.config import Config
 
 
 # Dump agent handler
-class Dump(QuantumAgent, RPC):
+class Dump(RPC):
     def __init__(self, connection, config, handler=None):
         # Grab a copy of our config section
         self.config = config.section('Dump')
@@ -28,12 +23,6 @@ class Dump(QuantumAgent, RPC):
             level=self.config['loglevel'],
             handler=handler
         )
-
-        # Parse agent config
-        self.qconfig = Config(self.config['conffile'], 'AGENT')
-
-        # Initialize super
-        QuantumAgent.__init__(self, self.qconfig, '')
 
         # Initialize RPC bits
         RPC.__init__(
@@ -52,6 +41,6 @@ class Dump(QuantumAgent, RPC):
             }
         )
 
-#    def update(self, body, message):
-#        #self.logger.debug(json.dumps(body, indent=2, sort_keys=True))
-#        message.ack()
+    def update(self, body, message):
+        self.logger.debug(json.dumps(body, indent=2, sort_keys=True))
+        message.ack()

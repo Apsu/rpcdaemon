@@ -6,6 +6,6 @@ RPC Daemon
 
 This is an AMQP RPC Daemon, primarily intended for tracking and responding to OpenStack Quantum agent state changes and rescheduling resources appropriately.
 
-It currently supports L3 agents and DHCP agents are coming shortly.
+It currently supports L3 agents, DHCP agents and a special Dump plugin to blindly log RPC messages.
 
 The current framework correctly daemonizes and operates as a singleton by using a pidfile.
