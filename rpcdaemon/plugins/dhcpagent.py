@@ -81,32 +81,32 @@ class DHCPAgent(QuantumAgent, RPC):
 
         self.logger.debug('Targets: %s' % targets.keys())
 
+        # Get all networks
+        networks = {
+            network['id']: network for network in
+            self.client.list_networks()['networks']
+        }
+
+        self.logger.debug('All Networks: %s' % networks.keys())
+
+        # Map agents to missing networks
+        mapping = {
+            target: [
+                missing for missing in networks
+                if missing not in [
+                    network['id'] for network in
+                    self.client.list_networks_on_dhcp_agent(target)
+                    ['networks']
+                ]
+            ]
+            for target in targets
+        }
+
+        self.logger.debug('Mapping: %s' % mapping)
+
         # Any agents alive?
         if targets:
-            # Get all networks
-            networks = {
-                network['id']: network for network in
-                self.client.list_networks()['networks']
-            }
-
-            self.logger.debug('All Networks: %s' % networks.keys())
-
-            # Map agents to missing networks
-            mapping = {
-                target: [
-                    missing for missing in networks
-                    if missing not in [
-                        network['id'] for network in
-                        self.client.list_networks_on_dhcp_agent(target)
-                        ['networks']
-                    ]
-                ]
-                for target in targets
-            }
-
-            self.logger.debug('Mapping: %s' % mapping)
-
-            # And schedule them
+            # Schedule networks to them
             for target in mapping:
                 for network in mapping[target]:
                     self.logger.info(

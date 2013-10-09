@@ -79,32 +79,32 @@ class L3Agent(QuantumAgent, RPC):
 
         self.logger.debug('Targets: %s' % targets.keys())
 
+        # Get routers on agents
+        binds = {
+            router['id']: router for target in targets
+            for router in
+            self.client.list_routers_on_l3_agent(target)['routers']
+        }
+
+        self.logger.debug('Bound Routers: %s' % binds.keys())
+
+        # And routers not on agents
+        routers = {
+            router['id']: router
+            for router in self.client.list_routers()['routers']
+            if not router['id'] in binds
+        }
+
+        self.logger.debug('Free Routers: %s' % routers.keys())
+
+        # Map free routers to agents
+        mapping = zip(routers, cycle(targets))
+
+        self.logger.debug('Mapping: %s' % mapping)
+
         # Any agents alive?
         if targets:
-            # Get routers on agents
-            binds = {
-                router['id']: router for target in targets
-                for router in
-                self.client.list_routers_on_l3_agent(target)['routers']
-            }
-
-            self.logger.debug('Bound Routers: %s' % binds.keys())
-
-            # And routers not on agents
-            routers = {
-                router['id']: router
-                for router in self.client.list_routers()['routers']
-                if not router['id'] in binds
-            }
-
-            self.logger.debug('Free Routers: %s' % routers.keys())
-
-            # Map free routers to agents
-            mapping = zip(routers, cycle(targets))
-
-            self.logger.debug('Mapping: %s' % mapping)
-
-            # And schedule them
+            # Schedule routers to them
             for router, target in mapping:
                 self.logger.info(
                     'Scheduling %s [%s] -> %s/%s [%s].' % (
