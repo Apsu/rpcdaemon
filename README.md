@@ -1,4 +1,4 @@
-RPC Daemon
+RPC Daemon (Havana work in progress)
 ==========
 
 **THIS IS AN ACTIVE WORK IN PROGRESS**
