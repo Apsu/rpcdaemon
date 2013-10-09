@@ -48,9 +48,7 @@ class QuantumAgent():
             )
             self.agents[agent['id']] = agent
 
-        self.logger.debug(
-            'Agents: %s' % [str(agent['id']) for agent in self.agents.values()]
-        )
+        self.logger.debug('Agents: %s' % agents.keys())
 
     # Empty default handler
     def handle(self, agent, state):

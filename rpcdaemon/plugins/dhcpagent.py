@@ -54,10 +54,10 @@ class DHCPAgent(QuantumAgent, RPC):
     # DHCP specific handler
     def handle(self, agent, state):
         # All alive agents
-        targets = [
-            target for target in self.agents.values()
+        targets = {
+            target['id']:target for target in self.agents.values()
             if target['alive']
-        ]
+        }
 
         # If agent is down, remove networks first
         if not state:
@@ -79,51 +79,50 @@ class DHCPAgent(QuantumAgent, RPC):
                     network['id']
                 )
 
-        self.logger.debug(
-            'Targets: %s' % [str(target['id']) for target in targets]
-        )
+        self.logger.debug('Targets: %s' % targets.keys())
 
-        # Networks on agents
-        binds = [
-            network for target in targets
-            for network in
-            self.client.list_networks_on_dhcp_agent(target['id'])['networks']
-        ]
-
-        self.logger.debug(
-            'Bound Networks: %s' % [str(bind['id']) for bind in binds]
-        )
-
-        # Networks not on agents
-        networks = [
-            network
-            for network in self.client.list_networks()['networks']
-            if not network in binds
-        ]
-
-        self.logger.debug(
-            'Free Networks: %s' % [str(network['id']) for network in networks]
-        )
 
         # Any agents alive?
         if targets:
-            mapping = product(networks, targets)
+            # Get all networks
+            networks = {
+                network['id']:network for network in
+                self.client.list_networks()['networks']
+            }
+
+            self.logger.debug('All Networks: %s' % networks.keys())
+
+            # Map agents to missing networks
+            mapping = {
+                target:[
+                    missing for missing in networks
+                    if missing not in [
+                        network['id'] for network in
+                        self.client.list_networks_on_dhcp_agent(target)
+                            ['networks']
+                    ]
+                ]
+                for target in targets
+            }
+
+            self.logger.debug('Mapping: %s' % mapping)
 
             # And schedule them
-            for network, target in mapping:
-                self.logger.info(
-                    'Scheduling %s [%s] -> %s/%s [%s].' % (
-                        network['name'],
-                        str(network['id']),
-                        target['host'],
-                        target['agent_type'],
-                        str(target['id'])
+            for target in mapping:
+                for network in mapping[target]:
+                    self.logger.info(
+                        'Scheduling %s [%s] -> %s/%s [%s].' % (
+                            networks[network]['name'],
+                            str(network),
+                            targets[target]['host'],
+                            targets[target]['agent_type'],
+                            str(target)
+                        )
                     )
-                )
-                self.client.add_network_to_dhcp_agent(
-                    target['id'],
-                    {'network_id': network['id']}
-                )
+                    self.client.add_network_to_dhcp_agent(
+                        target,
+                        {'network_id': network}
+                    )
         # No agents, any networks?
         elif networks:
             self.logger.warn('No agents found to schedule networks to.')

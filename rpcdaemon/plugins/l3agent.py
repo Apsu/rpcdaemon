@@ -77,9 +77,7 @@ class L3Agent(QuantumAgent, RPC):
                     router['id']
                 )
 
-        self.logger.debug(
-            'Targets: %s' % [str(target['id']) for target in targets]
-        )
+        self.logger.debug('Targets: %s' % targets)
 
         # Routers on agents
         binds = [
@@ -88,9 +86,7 @@ class L3Agent(QuantumAgent, RPC):
             self.client.list_routers_on_l3_agent(target['id'])['routers']
         ]
 
-        self.logger.debug(
-            'Bound Routers: %s' % [str(bind['id']) for bind in binds]
-        )
+        self.logger.debug('Bound Routers: %s' % binds)
 
         # Routers not on agents
         routers = [
@@ -99,9 +95,7 @@ class L3Agent(QuantumAgent, RPC):
             if not router in binds
         ]
 
-        self.logger.debug(
-            'Free Routers: %s' % [str(router['id']) for router in routers]
-        )
+        self.logger.debug('Free Routers: %s' % routers)
 
         # Any agents alive?
         if targets:
