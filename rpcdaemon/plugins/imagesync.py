@@ -45,3 +45,6 @@ class ImageSync(RPC):
     def update(self, body, message):
         self.logger.debug(json.dumps(body, indent=2, sort_keys=True))
         message.ack()
+
+    def check(self):
+        pass
