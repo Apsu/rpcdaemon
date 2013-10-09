@@ -55,7 +55,7 @@ class L3Agent(QuantumAgent, RPC):
     def handle(self, agent, state):
         # All alive agents
         targets = {
-            target['id']:target for target in self.agents.values()
+            target['id']: target for target in self.agents.values()
             if target['alive']
         }
 
@@ -79,12 +79,11 @@ class L3Agent(QuantumAgent, RPC):
 
         self.logger.debug('Targets: %s' % targets.keys())
 
-
         # Any agents alive?
         if targets:
             # Get routers on agents
             binds = {
-                router['id']:router for target in targets
+                router['id']: router for target in targets
                 for router in
                 self.client.list_routers_on_l3_agent(target)['routers']
             }
@@ -93,7 +92,7 @@ class L3Agent(QuantumAgent, RPC):
 
             # And routers not on agents
             routers = {
-                router['id']:router
+                router['id']: router
                 for router in self.client.list_routers()['routers']
                 if not router['id'] in binds
             }

@@ -55,7 +55,7 @@ class DHCPAgent(QuantumAgent, RPC):
     def handle(self, agent, state):
         # All alive agents
         targets = {
-            target['id']:target for target in self.agents.values()
+            target['id']: target for target in self.agents.values()
             if target['alive']
         }
 
@@ -81,12 +81,11 @@ class DHCPAgent(QuantumAgent, RPC):
 
         self.logger.debug('Targets: %s' % targets.keys())
 
-
         # Any agents alive?
         if targets:
             # Get all networks
             networks = {
-                network['id']:network for network in
+                network['id']: network for network in
                 self.client.list_networks()['networks']
             }
 
@@ -94,12 +93,12 @@ class DHCPAgent(QuantumAgent, RPC):
 
             # Map agents to missing networks
             mapping = {
-                target:[
+                target: [
                     missing for missing in networks
                     if missing not in [
                         network['id'] for network in
                         self.client.list_networks_on_dhcp_agent(target)
-                            ['networks']
+                        ['networks']
                     ]
                 ]
                 for target in targets
