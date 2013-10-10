@@ -67,7 +67,7 @@ class L3Agent(QuantumAgent, RPC):
                 self.logger.info(
                     'Removing %s [%s] from %s/%s [%s]' % (
                         router['name'],
-                        router['id']
+                        router['id'],
                         agent['host'],
                         agent['agent_type'],
                         str(agent['id'])
