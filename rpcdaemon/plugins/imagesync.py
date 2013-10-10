@@ -49,9 +49,11 @@ class ImageSync(RPC):
     def update(self, body, message):
         self.logger.debug(dumps(body, indent=2, sort_keys=True))
 
+        payload = body['payload']
+
         image = "%s/%s" % (
             self.gconfig['filesystem_store_datadir'],
-            body['id']
+            payload['id']
         )
         event = body['event_type']
         host = body['publisher_id']
