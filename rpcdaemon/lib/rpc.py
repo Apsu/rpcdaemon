@@ -11,4 +11,5 @@ class RPC():
         exopts['channel'] = self.connection.channel()
         self.exchange = Exchange(**exopts)
         qopts['exchange'] = self.exchange
+        qopts['arguments'] = {'x-expires': 5000}
         self.queue = Queue(**qopts)
