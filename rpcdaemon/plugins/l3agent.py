@@ -65,8 +65,9 @@ class L3Agent(QuantumAgent, RPC):
                 self.client.list_routers_on_l3_agent(agent['id'])['routers']
             ):
                 self.logger.info(
-                    'Removing router %s from %s/%s [%s]' % (
-                        router['id'],
+                    'Removing %s [%s] from %s/%s [%s]' % (
+                        router['name'],
+                        router['id']
                         agent['host'],
                         agent['agent_type'],
                         str(agent['id'])
@@ -107,7 +108,7 @@ class L3Agent(QuantumAgent, RPC):
             # Schedule routers to them
             for router, target in mapping:
                 self.logger.info(
-                    'Scheduling %s [%s] -> %s/%s [%s].' % (
+                    'Scheduling %s [%s] -> %s/%s [%s]' % (
                         routers[router]['name'],
                         str(router),
                         targets[target]['host'],

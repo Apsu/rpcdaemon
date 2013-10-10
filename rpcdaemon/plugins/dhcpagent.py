@@ -67,7 +67,8 @@ class DHCPAgent(QuantumAgent, RPC):
                 )['networks']
             ):
                 self.logger.info(
-                    'Removing network %s from %s/%s [%s]' % (
+                    'Removing %s [%s] from %s/%s [%s]' % (
+                        network['name'],
                         network['id'],
                         agent['host'],
                         agent['agent_type'],
@@ -110,7 +111,7 @@ class DHCPAgent(QuantumAgent, RPC):
             for target in mapping:
                 for network in mapping[target]:
                     self.logger.info(
-                        'Scheduling %s [%s] -> %s/%s [%s].' % (
+                        'Scheduling %s [%s] -> %s/%s [%s]' % (
                             networks[network]['name'],
                             str(network),
                             targets[target]['host'],
