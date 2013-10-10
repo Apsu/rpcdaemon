@@ -24,7 +24,7 @@ class Plugin(RPC):
 
         # Initialize logger
         self.logger = Logger(
-            name=sublower,
+            name=self.sublower,
             level=self.config['loglevel'],
             handler=handler
         )
