@@ -2,19 +2,14 @@ from threading import Event, Thread
 
 
 class Poll(object):
-    def __init__(self, interval):
-        self.interval = interval
+    def __init__(self, interval, func, *args, **kwargs):
+        interval = interval
+        event = Event()
 
-    def __call__(self, func):
-        def wrap(*args, **kwargs):
-            event = Event()
+        def loop():
+            while not event.wait(interval):
+                func(*args, **kwargs)
 
-            def loop():
-                while not event.wait(self.interval):
-                    func(*args, **kwargs)
-
-            thread = Thread(target=loop)
-            thread.daemon = True
-            thread.start()
-            return event
-        return wrap
+        thread = Thread(target=loop)
+        thread.daemon = True
+        thread.start()
