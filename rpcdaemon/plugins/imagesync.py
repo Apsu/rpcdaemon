@@ -20,7 +20,7 @@ class ImageSync(RPC):
         # Grab a copy of our config section
         self.config = config.section('ImageSync')
 
-        self.gconfig = Config(['conffile'], 'DEFAULT')
+        self.gconfig = Config(self.config['conffile'], 'DEFAULT')
 
         # Initialize logger
         self.logger = Logger(
