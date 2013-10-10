@@ -72,7 +72,7 @@ class DHCPAgent(QuantumAgent, RPC):
                         network['id'],
                         agent['host'],
                         agent['agent_type'],
-                        str(agent['id'])
+                        agent['id']
                     )
                 )
                 self.client.remove_network_from_dhcp_agent(
@@ -113,10 +113,10 @@ class DHCPAgent(QuantumAgent, RPC):
                     self.logger.info(
                         'Scheduling %s [%s] -> %s/%s [%s]' % (
                             networks[network]['name'],
-                            str(network),
+                            network,
                             targets[target]['host'],
                             targets[target]['agent_type'],
-                            str(target)
+                            target
                         )
                     )
                     self.client.add_network_to_dhcp_agent(

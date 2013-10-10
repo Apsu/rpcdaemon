@@ -70,7 +70,7 @@ class L3Agent(QuantumAgent, RPC):
                         router['id'],
                         agent['host'],
                         agent['agent_type'],
-                        str(agent['id'])
+                        agent['id']
                     )
                 )
                 self.client.remove_router_from_l3_agent(
@@ -110,10 +110,10 @@ class L3Agent(QuantumAgent, RPC):
                 self.logger.info(
                     'Scheduling %s [%s] -> %s/%s [%s]' % (
                         routers[router]['name'],
-                        str(router),
+                        router,
                         targets[target]['host'],
                         targets[target]['agent_type'],
-                        str(target)
+                        target
                     )
                 )
                 self.client.add_router_to_l3_agent(
