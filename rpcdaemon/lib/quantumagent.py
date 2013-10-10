@@ -8,6 +8,9 @@ from datetime import datetime, timedelta
 # Quantumclient
 from quantumclient.v2_0.client import Client
 
+# Poll decorator
+from rpcdaemon.lib.poll import Poll
+
 
 # Generalized quantum agent handler
 class QuantumAgent():
@@ -103,7 +106,7 @@ class QuantumAgent():
         # Ack that sucker
         message.ack()
 
-    # Called in loop
+    @Poll(self.timeout)
     def check(self):
         self.lock.acquire()  # Lock outside RPC callback
         for agent in self.agents.values():

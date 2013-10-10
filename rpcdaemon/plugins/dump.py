@@ -1,5 +1,6 @@
 # General
-import json
+from json import dumps
+from uuid import uuid4
 
 # RPC superclass
 from rpcdaemon.lib.rpc import RPC
@@ -42,5 +43,5 @@ class Dump(RPC):
         )
 
     def update(self, body, message):
-        self.logger.debug(json.dumps(body, indent=2, sort_keys=True))
+        self.logger.debug(dumps(body, indent=2, sort_keys=True))
         message.ack()

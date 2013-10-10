@@ -1,5 +1,7 @@
 # General
-import json
+from json import dumps
+from os import remove
+from socket import gethostname
 from uuid import uuid4
 
 # RPC superclass
@@ -17,6 +19,8 @@ class ImageSync(RPC):
     def __init__(self, connection, config, handler=None):
         # Grab a copy of our config section
         self.config = config.section('ImageSync')
+
+        self.gconfig = Config(['conffile'], 'DEFAULT')
 
         # Initialize logger
         self.logger = Logger(
@@ -43,8 +47,17 @@ class ImageSync(RPC):
         )
 
     def update(self, body, message):
-        self.logger.debug(json.dumps(body, indent=2, sort_keys=True))
-        message.ack()
+        self.logger.debug(dumps(body, indent=2, sort_keys=True))
 
-    def check(self):
-        pass
+        image = "%s/%s" % (
+            self.gconfig['filesystem_store_datadir'],
+            body['id']
+        )
+        event = body['event_type']
+        host = body['publisher_id']
+
+        if event == 'image.update':
+            pass
+        elif event == 'image.delete':
+            pass
+        message.ack()

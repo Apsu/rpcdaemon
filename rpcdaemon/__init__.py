@@ -102,10 +102,6 @@ class Monitor(DaemonContext):
         self.worker.start()
         self.logger.info('Started.')
 
-    def check(self):
-        for plugin in self.plugins:
-            plugin.check()
-
     def close(self):
         # We might get called more than once, or before worker exists
         if self.is_open and self.worker and self.worker.is_alive():
@@ -123,13 +119,10 @@ class Monitor(DaemonContext):
 
 # Entry point
 def main():
+    # Enter DaemonContext
     with Monitor() as monitor:
-        while monitor.worker.is_alive():
-            monitor.logger.debug('Dispatching plugin checks...')
-            monitor.check()
-            # TODO: plugin.check thread pool?
-            sleep(monitor.timeout)
-
+        # Wait on worker
+        monitor.worker.join()
 
 # If called directly
 if __name__ == '__main__':
