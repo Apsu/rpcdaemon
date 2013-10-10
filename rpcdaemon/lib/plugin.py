@@ -13,8 +13,8 @@ from rpcdaemon.lib.config import Config
 
 # Plugin base class
 class Plugin(RPC):
-    def __init__(self, subclass, connection, config, handler=None):
-        self.subclass = subclass
+    def __init__(self, connection, config, handler=None):
+        self.subclass = self.__class__.__name__
         self.sublower = subclass.lower()
 
         # Grab a copy of our config section

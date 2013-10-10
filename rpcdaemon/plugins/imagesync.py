@@ -10,7 +10,7 @@ from rpcdaemon.lib.plugin import Plugin
 class ImageSync(Plugin):
     def __init__(self, connection, config, handler=None):
         # Initialize base Plugin
-        Plugin.__init__(self, self.__name__, connection, config, handler)
+        Plugin.__init__(self, connection, config, handler)
 
         # Store glance data dir
         self.datadir = self.pconfig['filesystem_store_datadir']
