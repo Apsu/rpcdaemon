@@ -13,13 +13,10 @@ from rpcdaemon.lib.poll import Poll
 
 
 # Generalized quantum agent handler
-class QuantumAgent(Poll):
+class QuantumAgent():
     def __init__(self, config, agent_type):
         # Config blob for us
         self.config = config
-
-        # Start poller
-        Poll.__init__(self, int(self.config['agent_down_time']), self.check)
 
         # Store what type of agent we are
         self.agent_type = agent_type
@@ -54,6 +51,9 @@ class QuantumAgent(Poll):
             self.agents[agent['id']] = agent
 
         self.logger.debug('Agents: %s' % agents.keys())
+
+        # Start self.check poller
+        Poll(int(self.config['agent_down_time']), self.check)
 
     # Empty default handler
     def handle(self, agent, state):
@@ -108,7 +108,7 @@ class QuantumAgent(Poll):
         # Ack that sucker
         message.ack()
 
-    # Called via Poll() super
+    # Called via Poll() thread
     def check(self):
         self.lock.acquire()  # Lock outside RPC callback
         for agent in self.agents.values():

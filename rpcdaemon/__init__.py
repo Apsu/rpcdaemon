@@ -53,8 +53,8 @@ class Monitor(DaemonContext):
         # PID lockfile
         self.pidfile = PIDFile('/var/run/rpcdaemon.pid')
 
-        # TOOD: plugin.check thread pool?
-        self.timeout = 1
+        # Worker thread check interval
+        self.timeout = self.config['polltime']
 
         # Clamp in case we exit before worker exists
         self.worker = None
@@ -95,12 +95,10 @@ class Monitor(DaemonContext):
             ]
         ]
 
-        # Setup worker with plugins and crank it up
+        # Setup worker with plugins
         self.logger.info('Starting worker...')
         self.worker = Worker(self.connection, self.plugins)
-        self.worker.daemon = True  # Daemon thread
-        self.worker.start()
-        self.logger.info('Started.')
+        self.worker.daemon = True  # Daemon thread so it dies on exit
 
     def close(self):
         # We might get called more than once, or before worker exists
@@ -121,8 +119,9 @@ class Monitor(DaemonContext):
 def main():
     # Enter DaemonContext
     with Monitor() as monitor:
-        # Wait on worker
-        monitor.worker.join()
+        # And crank it up
+        monitor.logger.info('Started.')
+        monitor.worker.run()
 
 # If called directly
 if __name__ == '__main__':

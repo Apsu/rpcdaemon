@@ -3,13 +3,13 @@ from threading import Event, Thread
 
 class Poll(object):
     def __init__(self, interval, func, *args, **kwargs):
-        interval = interval
-        event = Event()
+        self.interval = interval
+        self.event = Event()
 
         def loop():
-            while not event.wait(interval):
+            while not self.event.wait(self.interval):
                 func(*args, **kwargs)
 
-        thread = Thread(target=loop)
-        thread.daemon = True
-        thread.start()
+        self.thread = Thread(target=loop)
+        self.thread.daemon = True  # Daemon thread
+        self.thread.start()

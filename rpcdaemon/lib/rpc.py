@@ -12,3 +12,7 @@ class RPC():
         self.exchange = Exchange(**exopts)
         qopts['exchange'] = self.exchange
         self.queue = Queue(**qopts)
+
+    # Empty default handler
+    def handle(self, agent, state):
+        pass
