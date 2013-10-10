@@ -13,7 +13,10 @@ class Config(RawConfigParser):
             raise IOError('Failed to parse config file %s' % path)
 
     def __getitem__(self, item):
-        return self._config.get(item)
+        if self._config.get(item):
+            return self._config[item]
+        else:
+            raise IndexError()
 
     def section(self, section='DEFAULT'):
         return Config(self.path, section)
