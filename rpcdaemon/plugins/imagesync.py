@@ -1,65 +1,53 @@
 # General
-from json import dumps
-from os import remove
+from glob import glob
+from os import remove, system
 from socket import gethostname
-from uuid import uuid4
 
-# RPC superclass
-from rpcdaemon.lib.rpc import RPC
-
-# Logger wrapper
-from rpcdaemon.lib.logger import Logger
-
-# Config parser
-from rpcdaemon.lib.config import Config
-
+# Plugin superclass
+from rpcdaemon.lib.plugin import Plugin
 
 # Glance image sync handler
-class ImageSync(RPC):
+class ImageSync(Plugin):
     def __init__(self, connection, config, handler=None):
-        # Grab a copy of our config section
-        self.config = config.section('ImageSync')
+        # Initialize base Plugin
+        Plugin.__init__(self, self.__name__, connection, config, handler)
 
-        self.gconfig = Config(self.config['conffile'], 'DEFAULT')
-
-        # Initialize logger
-        self.logger = Logger(
-            name='imagesync',
-            level=self.config['loglevel'],
-            handler=handler
-        )
-
-        # Initialize RPC bits
-        RPC.__init__(
-            self,
-            connection,
-            exopts={
-                'name': 'glance',
-                'durable': False,
-                'type': 'topic'
-            },
-            qopts={
-                'name': 'rpcdaemon-imagesync_%s' % uuid4(),
-                'auto_delete': True,
-                'durable': False,
-                'routing_key': 'glance_notifications.info'
-            }
-        )
+        # Store glance data dir
+        self.datadir = self.pconfig['filesystem_store_datadir']
 
     def update(self, body, message):
-        self.logger.debug(dumps(body, indent=2, sort_keys=True))
-
+        # Extract pieces
         payload = body['payload']
-
-        image = "%s/%s" % (
-            self.gconfig['filesystem_store_datadir'],
-            payload['id']
-        )
+        image = "%s/%s" % (self.datadir, payload['id'])
         event = body['event_type']
         host = body['publisher_id']
 
-        if event == 'image.update':
-            pass
+        # Got an image update from someone besides me?
+        if event == 'image.update' and host != gethostname():
+            self.logger.info(
+                'Update detected on %s. Syncing image %s' % (
+                    host, image
+                )
+            )
+            # Rsync image
+            system(
+                'rsync -ae "ssh -o StrictHostKeyChecking=no"'
+                '%s@%s:%s %s' % (self.config['rsync_user'], host, image, image)
+            )
+        # Maybe deleted instead?
         elif event == 'image.delete':
-            pass
+            self.logger.info(
+                'Delete detected on %s. Removing image %s' % (
+                    host, image
+                )
+            )
+            # Temp file glob from rsync still in progress
+            temp = '%s/.*%s*' % (self.datadir, payload['id'])
+
+            # No temp file?
+            if not glob(temp):
+                # Safe to delete image
+                remove(image)
+
+        # ACK message in any case
         message.ack()
