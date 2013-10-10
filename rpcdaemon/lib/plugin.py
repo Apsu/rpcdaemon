@@ -18,7 +18,7 @@ class Plugin(RPC):
         self.sublower = self.subclass.lower()
 
         # Grab a copy of our config section
-        self.config = config.section(subclass)
+        self.config = config.section(self.subclass)
 
         self.pconfig = Config(self.config['conffile'], 'DEFAULT')
 
