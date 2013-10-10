@@ -53,9 +53,6 @@ class Monitor(DaemonContext):
         # PID lockfile
         self.pidfile = PIDFile('/var/run/rpcdaemon.pid')
 
-        # Worker thread check interval
-        self.timeout = self.config['polltime']
-
         # Clamp in case we exit before worker exists
         self.worker = None
 
