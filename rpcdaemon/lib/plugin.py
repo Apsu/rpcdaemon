@@ -15,7 +15,7 @@ from rpcdaemon.lib.config import Config
 class Plugin(RPC):
     def __init__(self, connection, config, handler=None):
         self.subclass = self.__class__.__name__
-        self.sublower = subclass.lower()
+        self.sublower = self.subclass.lower()
 
         # Grab a copy of our config section
         self.config = config.section(subclass)
