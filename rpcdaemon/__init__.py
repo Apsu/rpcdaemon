@@ -2,8 +2,6 @@
 
 # General
 import sys
-from time import sleep
-from signal import signal, getsignal, SIGTERM, SIGINT
 
 # Daemonizing
 from daemon import DaemonContext
@@ -41,7 +39,7 @@ class Worker(ConsumerMixin, Thread):
 class Monitor(DaemonContext):
     def __init__(self):
         # Parse config
-        self.config = Config('/usr/local/etc/rpcdaemon.conf', 'Daemon')
+        self.config = Config('/usr/local/etc/rpcdaemon.conf')
 
         # Initialize logger
         self.logger = Logger(
@@ -88,7 +86,7 @@ class Monitor(DaemonContext):
                         fromlist=[module]
                     ),
                     module)
-                for module in self.config['plugins'].split(',')
+                for module in self.config['plugins'].split()
             ]
         ]
 
