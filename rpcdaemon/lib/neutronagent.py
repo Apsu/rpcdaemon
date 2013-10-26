@@ -5,12 +5,12 @@ from threading import Semaphore
 from dateutil.parser import parse as dateparse
 from datetime import datetime, timedelta
 
-# Quantumclient
-from quantumclient.v2_0.client import Client
+# Neutronclient
+from neutronclient.v2_0.client import Client
 
 
-# Generalized quantum agent handler
-class QuantumAgent():
+# Generalized neutron agent handler
+class NeutronAgent():
     def __init__(self, config, agent_type):
         # Config blob for us
         self.config = config
@@ -28,7 +28,7 @@ class QuantumAgent():
         self.downtime = timedelta(seconds=int(self.config['agent_down_time']))
         self.timeout = int(self.config['agent_down_time'])
 
-        # Initialize quantum client
+        # Initialize neutron client
         self.client = Client(
             username=self.config['admin_user'],
             password=self.config['admin_password'],

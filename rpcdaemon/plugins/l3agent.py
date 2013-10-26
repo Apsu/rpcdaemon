@@ -2,8 +2,8 @@
 from uuid import uuid4
 from itertools import cycle
 
-# Quantum Agent superclass
-from rpcdaemon.lib.quantumagent import QuantumAgent
+# Neutron Agent superclass
+from rpcdaemon.lib.neutronagent import NeutronAgent
 
 # RPC superclass
 from rpcdaemon.lib.rpc import RPC
@@ -16,7 +16,7 @@ from rpcdaemon.lib.config import Config
 
 
 # Specific L3 agent handler
-class L3Agent(QuantumAgent, RPC):
+class L3Agent(NeutronAgent, RPC):
     def __init__(self, connection, config, handler=None):
         # Grab a copy of our config section
         self.config = config.section('L3Agent')
@@ -32,14 +32,14 @@ class L3Agent(QuantumAgent, RPC):
         self.qconfig = Config(self.config['conffile'], 'AGENT')
 
         # Initialize super
-        QuantumAgent.__init__(self, self.qconfig, 'L3 agent')
+        NeutronAgent.__init__(self, self.qconfig, 'L3 agent')
 
         # Initialize RPC bits
         RPC.__init__(
             self,
             connection,
             exopts={
-                'name': 'quantum',
+                'name': 'neutron',
                 'durable': False,
                 'type': 'topic'
             },

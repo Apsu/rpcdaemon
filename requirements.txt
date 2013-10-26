@@ -4,4 +4,4 @@ python-daemon
 python-dateutil
 ConfigParser
 kombu
-python-quantumclient
+python-neutronclient

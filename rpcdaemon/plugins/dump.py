@@ -29,7 +29,7 @@ class Dump(RPC):
             self,
             connection,
             exopts={
-                'name': 'quantum',
+                'name': 'neutron',
                 'durable': False,
                 'type': 'topic'
             },

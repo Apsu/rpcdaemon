@@ -2,8 +2,8 @@
 from uuid import uuid4
 from itertools import product
 
-# Quantum Agent superclass
-from rpcdaemon.lib.quantumagent import QuantumAgent
+# Neutron Agent superclass
+from rpcdaemon.lib.neutronagent import NeutronAgent
 
 # RPC superclass
 from rpcdaemon.lib.rpc import RPC
@@ -16,7 +16,7 @@ from rpcdaemon.lib.config import Config
 
 
 # Specific DHCP agent handler
-class DHCPAgent(QuantumAgent, RPC):
+class DHCPAgent(NeutronAgent, RPC):
     def __init__(self, connection, config, handler=None):
         # Grab a copy of our config section
         self.config = config.section('DHCPAgent')
@@ -32,14 +32,14 @@ class DHCPAgent(QuantumAgent, RPC):
         self.qconfig = Config(self.config['conffile'], 'AGENT')
 
         # Initialize super
-        QuantumAgent.__init__(self, self.qconfig, 'DHCP agent')
+        NeutronAgent.__init__(self, self.qconfig, 'DHCP agent')
 
         # Initialize RPC bits
         RPC.__init__(
             self,
             connection,
             exopts={
-                'name': 'quantum',
+                'name': 'neutron',
                 'durable': False,
                 'type': 'topic'
             },
