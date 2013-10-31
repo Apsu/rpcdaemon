@@ -7,9 +7,9 @@ from datetime import datetime, timedelta
 
 # (Neutron|Quantum)client
 try:
-    from quantumclient.v2_0.client import Client
-except:
     from neutronclient.v2_0.client import Client
+except:
+    from quantumclient.v2_0.client import Client
 
 
 # Generalized neutron agent handler
