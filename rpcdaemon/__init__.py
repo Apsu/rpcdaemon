@@ -2,6 +2,7 @@
 
 # General
 import sys
+import getopt
 from time import sleep
 from signal import signal, getsignal, SIGTERM, SIGINT
 
@@ -39,9 +40,9 @@ class Worker(ConsumerMixin, Thread):
 
 # State monitor
 class Monitor(DaemonContext):
-    def __init__(self):
+    def __init__(self, config_file):
         # Parse config
-        self.config = Config('/usr/local/etc/rpcdaemon.conf', 'Daemon')
+        self.config = Config(config_file, 'Daemon')
 
         # Initialize logger
         self.logger = Logger(
@@ -123,7 +124,10 @@ class Monitor(DaemonContext):
 
 # Entry point
 def main():
-    with Monitor() as monitor:
+    default_config = '/usr/local/etc/rpcdaemon.conf'
+    options, _ = getopt.getopt(sys.argv[1:], 'c:')
+
+    with Monitor(dict(options).get('-c', default_config)) as monitor:
         while monitor.worker.is_alive():
             monitor.logger.debug('Dispatching plugin checks...')
             monitor.check()
