@@ -5,8 +5,11 @@ from threading import Semaphore
 from dateutil.parser import parse as dateparse
 from datetime import datetime, timedelta
 
-# Neutronclient
-from neutronclient.v2_0.client import Client
+# (Neutron|Quantum)client
+try:
+    from quantumclient.v2_0.client import Client
+except:
+    from neutronclient.v2_0.client import Client
 
 
 # Generalized neutron agent handler
