@@ -5,7 +5,9 @@ from threading import Semaphore
 from dateutil.parser import parse as dateparse
 from datetime import datetime, timedelta
 
-# (Neutron|Quantum)client
+# JSON
+from json import loads
+
 try:
     from neutronclient.v2_0.client import Client
 except:
@@ -59,6 +61,9 @@ class NeutronAgent():
 
     # RPC Callback to update agents and states
     def update(self, body, message):
+        if 'oslo.message' in body:
+            body = loads(body['oslo.message'])
+
         if body['method'] == 'report_state':
             state = body['args']['agent_state']['agent_state']
             time = body['args']['time']
