@@ -46,5 +46,8 @@ class Dump(RPC):
         pass
 
     def update(self, body, message):
+        if 'oslo.message' in body:
+            body = json.loads(body['oslo.message'])
+
         self.logger.debug(json.dumps(body, indent=2, sort_keys=True))
         message.ack()
