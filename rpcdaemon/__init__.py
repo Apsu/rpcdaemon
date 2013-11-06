@@ -3,6 +3,7 @@
 # General
 import sys
 import getopt
+import logging
 from time import sleep
 from signal import signal, getsignal, SIGTERM, SIGINT
 
@@ -40,19 +41,29 @@ class Worker(ConsumerMixin, Thread):
 
 # State monitor
 class Monitor(DaemonContext):
-    def __init__(self, config_file):
+    def __init__(self, args=None):
+        # Parse args
+        if args is None:
+            args = {}
+
+        options, _ = getopt.getopt(sys.argv[1:], 'c:d')
+        options = dict(options)
+
+        config_file = options.get('-c', '/usr/local/etc/rpcdaemon.conf')
+        daemonize = '-d' not in options
+
         # Parse config
         self.config = Config(config_file, 'Daemon')
 
         # Initialize logger
         self.logger = Logger(
             name='rpcdaemon',
-            level=self.config['loglevel'],
-            path=self.config['logfile']
+            level = self.config['loglevel'],
+            path = self.config['logfile'] if daemonize else None,
+            handler = None if daemonize else logging.StreamHandler()
         )
 
-        # PID lockfile
-        self.pidfile = PIDFile(self.config['pidfile'])
+        self.pidfile = PIDFile(self.config['pidfile']) if daemonize else None;
 
         # TOOD: plugin.check thread pool?
         self.timeout = 1
@@ -63,17 +74,16 @@ class Monitor(DaemonContext):
         # Initialize daemon
         DaemonContext.__init__(
             self,
-            detach_process=True,
-            files_preserve=[self.logger.handler.stream],
-            pidfile=self.pidfile
+            detach_process=daemonize,
+            files_preserve=[self.logger.handler.stream.fileno()],
+            pidfile=self.pidfile,
+            stdout=self.logger.handler.stream,
+            stderr=self.logger.handler.stream
         )
 
     def open(self):
         # Call super
         DaemonContext.open(self)
-
-        # Log stdout/stderr for tracebacks and such
-        sys.stdout = sys.stderr = self.logger.handler.stream
 
         # Needfuls.doit()
         self.logger.info('Initializing...')
@@ -124,10 +134,7 @@ class Monitor(DaemonContext):
 
 # Entry point
 def main():
-    default_config = '/usr/local/etc/rpcdaemon.conf'
-    options, _ = getopt.getopt(sys.argv[1:], 'c:')
-
-    with Monitor(dict(options).get('-c', default_config)) as monitor:
+    with Monitor(sys.argv[1:]) as monitor:
         while monitor.worker.is_alive():
             monitor.logger.debug('Dispatching plugin checks...')
             monitor.check()
