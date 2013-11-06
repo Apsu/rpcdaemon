@@ -48,11 +48,11 @@ class Monitor(DaemonContext):
         self.logger = Logger(
             name='rpcdaemon',
             level=self.config['loglevel'],
-            path='/var/log/rpcdaemon.log'
+            path=self.config['logfile']
         )
 
         # PID lockfile
-        self.pidfile = PIDFile('/var/run/rpcdaemon.pid')
+        self.pidfile = PIDFile(self.config['pidfile'])
 
         # TOOD: plugin.check thread pool?
         self.timeout = 1
