@@ -49,5 +49,9 @@ class Dump(RPC):
         if 'oslo.message' in body:
             body = json.loads(body['oslo.message'])
 
-        self.logger.debug(json.dumps(body, indent=2, sort_keys=True))
+        filter_string = self.config._config.get('filter', 'True')
+
+        if eval(filter_string):
+            self.logger.debug(json.dumps(body, indent=2, sort_keys=True))
+
         message.ack()
