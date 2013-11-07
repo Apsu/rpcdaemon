@@ -25,12 +25,27 @@ from rpcdaemon.lib.pidfile import PIDFile
 
 # Consumer worker
 class Worker(ConsumerMixin, Thread):
-    def __init__(self, connection, plugins=[]):
+    def __init__(self, connection, plugins=[], handler=None):
         Thread.__init__(self, target=self.run)  # MRO picks mixin.run
         self.connection = connection
+        self.is_connected = True
         self.plugins = plugins
         self.queues = [plugin.queue for plugin in plugins]
         self.callbacks = [plugin.update for plugin in plugins]
+        self.logger = Logger(name='consumer',
+                             handler=handler)
+
+    def on_connection_error(self, exc, interval):
+        self.is_connected = False
+        if self.should_stop:
+            self.logger.warn('Disconnected AMQP')
+        else:
+            self.logger.warn('Retrying AMQP connection')
+            self.connection.ensure_connection()
+
+    def on_connection_revived(self):
+        self.logger.warn('AMQP connection re-established')
+        self.is_connected = True
 
     def get_consumers(self, Consumer, channel):
         return [
@@ -108,14 +123,17 @@ class Monitor(DaemonContext):
 
         # Setup worker with plugins and crank it up
         self.logger.info('Starting worker...')
-        self.worker = Worker(self.connection, self.plugins)
+        self.worker = Worker(self.connection, self.plugins,
+                             handler=self.logger.handler)
         self.worker.daemon = True  # Daemon thread
         self.worker.start()
         self.logger.info('Started.')
 
     def check(self):
-        for plugin in self.plugins:
-            plugin.check()
+        if self.worker.is_connected:
+            self.logger.debug('Dispatching plugin checks...')
+            for plugin in self.plugins:
+                plugin.check()
 
     def close(self):
         # We might get called more than once, or before worker exists
@@ -136,7 +154,6 @@ class Monitor(DaemonContext):
 def main():
     with Monitor(sys.argv[1:]) as monitor:
         while monitor.worker.is_alive():
-            monitor.logger.debug('Dispatching plugin checks...')
             monitor.check()
             # TODO: plugin.check thread pool?
             sleep(monitor.timeout)
