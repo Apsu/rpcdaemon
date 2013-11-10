@@ -17,7 +17,7 @@ from threading import Thread
 try:
     from kombu.mixins import ConsumerMixin
 except ImportError:
-    from rcpdaemon.lib.mixins import ComsumerMixin
+    from rpcdaemon.lib.mixins import ConsumerMixin
 
 from kombu import Connection
 
