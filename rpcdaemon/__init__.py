@@ -14,7 +14,11 @@ from daemon import DaemonContext
 from threading import Thread
 
 # Kombu
-from kombu.mixins import ConsumerMixin
+try:
+    from kombu.mixins import ConsumerMixin
+except ImportError:
+    from rcpdaemon.lib.mixins import ComsumerMixin
+
 from kombu import Connection
 
 # My libs
