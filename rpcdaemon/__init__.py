@@ -48,8 +48,9 @@ class Worker(ConsumerMixin, Thread):
             self.connection.ensure_connection()
 
     def on_connection_revived(self):
-        self.logger.warn('AMQP connection re-established')
-        self.is_connected = True
+        if self.is_connected is False:
+            self.logger.warn('AMQP connection re-established')
+            self.is_connected = True
 
     def get_consumers(self, Consumer, channel):
         return [
