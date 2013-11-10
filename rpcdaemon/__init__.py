@@ -14,7 +14,11 @@ from daemon import DaemonContext
 from threading import Thread
 
 # Kombu
-from kombu.mixins import ConsumerMixin
+try:
+    from kombu.mixins import ConsumerMixin
+except ImportError:
+    from rpcdaemon.lib.mixins import ConsumerMixin
+
 from kombu import Connection
 
 # My libs
@@ -73,7 +77,7 @@ class Monitor(DaemonContext):
         # Initialize logger
         self.logger = Logger(
             name='rpcdaemon',
-            level = self.config['loglevel'],
+            level = getattr(logging, self.config['loglevel'].upper()),
             path = self.config['logfile'] if daemonize else None,
             handler = None if daemonize else logging.StreamHandler()
         )
