@@ -54,10 +54,9 @@ class L3Agent(NeutronAgent, RPC):
     # L3 specific handler
     def handle(self, agent, state):
         # All alive agents
-        targets = {
-            target['id']: target for target in self.agents.values()
-            if target['alive']
-        }
+        targets = dict([(target['id'], target)
+                        for target in self.agents.values()
+                        if target['alive']])
 
         # If agent is down, remove routers first
         if not state:
@@ -80,20 +79,16 @@ class L3Agent(NeutronAgent, RPC):
         self.logger.debug('Targets: %s' % targets.keys())
 
         # Get routers on agents
-        binds = {
-            router['id']: router for target in targets
-            for router in
-            self.client.list_routers_on_l3_agent(target)['routers']
-        }
+        binds = dict([(router['id'], router) for target in targets
+                      for router in
+                      self.client.list_routers_on_l3_agents(target)['routers']])
 
         self.logger.debug('Bound Routers: %s' % binds.keys())
 
         # And routers not on agents
-        routers = {
-            router['id']: router
-            for router in self.client.list_routers()['routers']
-            if not router['id'] in binds
-        }
+        routers = dict([(router['id'], router)
+                        for router in self.client.list_routers()['routers']
+                        if not router['id'] in binds])
 
         self.logger.debug('Free Routers: %s' % routers.keys())
 

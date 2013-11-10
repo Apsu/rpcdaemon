@@ -43,10 +43,8 @@ class NeutronAgent():
 
         # Populate agents and states
         self.logger.info('Populating agents...')
-        agents = {
-            agent['id']: agent for agent in
-            self.client.list_agents(agent_type=self.agent_type)['agents']
-        }
+        agents = dict([(agent['id'], agent) for agent int
+                       self.client.list_agents(agent_type=self.agent_type)['agents']])
         for agent in agents.values():
             agent['heartbeat_timestamp'] = dateparse(
                 agent['heartbeat_timestamp']
