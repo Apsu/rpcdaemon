@@ -48,8 +48,9 @@ class Worker(ConsumerMixin, Thread):
             self.connection.ensure_connection()
 
     def on_connection_revived(self):
-        self.logger.warn('AMQP connection re-established')
-        self.is_connected = True
+        if self.is_connected is False:
+            self.logger.warn('AMQP connection re-established')
+            self.is_connected = True
 
     def get_consumers(self, Consumer, channel):
         return [
@@ -77,7 +78,7 @@ class Monitor(DaemonContext):
         # Initialize logger
         self.logger = Logger(
             name='rpcdaemon',
-            level = getattr(logging, self.config['loglevel'].upper()),
+            level = self.config['loglevel'],
             path = self.config['logfile'] if daemonize else None,
             handler = None if daemonize else logging.StreamHandler()
         )
