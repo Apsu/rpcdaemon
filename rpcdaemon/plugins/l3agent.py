@@ -81,7 +81,7 @@ class L3Agent(NeutronAgent, RPC):
         # Get routers on agents
         binds = dict([(router['id'], router) for target in targets
                       for router in
-                      self.client.list_routers_on_l3_agents(target)['routers']])
+                      self.client.list_routers_on_l3_agent(target)['routers']])
 
         self.logger.debug('Bound Routers: %s' % binds.keys())
 

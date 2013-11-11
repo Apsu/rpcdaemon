@@ -29,7 +29,7 @@ class PIDFile():
 
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, *args, **kwargs):
         # If pidfile exists here we wrote it; kill it
         if os.path.exists(self.path):
             os.remove(self.path)
