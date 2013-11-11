@@ -10,8 +10,10 @@ from json import loads
 
 try:
     from neutronclient.v2_0.client import Client
+    from neutronclient.common.exceptions import NeutronException as NeutronAgentException
 except:
     from quantumclient.v2_0.client import Client
+    from quantumclient.common.exceptions import QuantumException as NeutronAgentException
 
 
 # Generalized neutron agent handler

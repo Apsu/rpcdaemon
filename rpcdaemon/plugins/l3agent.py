@@ -3,7 +3,7 @@ from uuid import uuid4
 from itertools import cycle
 
 # Neutron Agent superclass
-from rpcdaemon.lib.neutronagent import NeutronAgent
+from rpcdaemon.lib.neutronagent import NeutronAgent, NeutronAgentException
 
 # RPC superclass
 from rpcdaemon.lib.rpc import RPC
@@ -110,10 +110,15 @@ class L3Agent(NeutronAgent, RPC):
                         str(target)
                     )
                 )
-                self.client.add_router_to_l3_agent(
-                    target,
-                    {'router_id': router}
-                )
+                # this can cause errors if multiple rpcdaemons are running
+                try:
+                    self.client.add_router_to_l3_agent(
+                        target,
+                        {'router_id': router}
+                    )
+                except NeutronAgentException:
+                    self.logger.warn('Router %s already added to agent %s' % (
+                        router, target))
         # No agents, any routers?
         elif routers:
             self.logger.warn('No agents found to schedule routers to.')
