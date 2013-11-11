@@ -54,10 +54,9 @@ class DHCPAgent(NeutronAgent, RPC):
     # DHCP specific handler
     def handle(self, agent, state):
         # All alive agents
-        targets = {
-            target['id']: target for target in self.agents.values()
-            if target['alive']
-        }
+        targets=dict([(target['id'], target)
+                      for target in self.agents.values()
+                      if target['alive']])
 
         # If agent is down, remove networks first
         if not state:
@@ -82,25 +81,21 @@ class DHCPAgent(NeutronAgent, RPC):
         self.logger.debug('Targets: %s' % targets.keys())
 
         # Get all networks
-        networks = {
-            network['id']: network for network in
-            self.client.list_networks()['networks']
-        }
+        networks = dict([(network['id'], network)
+                         for networks in
+                         self.client.list_networks()['networks']])
 
         self.logger.debug('All Networks: %s' % networks.keys())
 
         # Map agents to missing networks
-        mapping = {
-            target: [
-                missing for missing in networks
-                if missing not in [
-                    network['id'] for network in
-                    self.client.list_networks_on_dhcp_agent(target)
-                    ['networks']
-                ]
-            ]
-            for target in targets
-        }
+        mapping = dict([(target, [
+                        missing for missing in networks
+                        if missing not in [
+                            network['id'] for network in
+                            self.client.list_networks_on_dhcp_agent(target)
+                            ['networks']
+                        ]
+                    ]) for target in targets])
 
         self.logger.debug('Mapping: %s' % mapping)
 

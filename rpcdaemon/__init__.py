@@ -14,7 +14,11 @@ from daemon import DaemonContext
 from threading import Thread
 
 # Kombu
-from kombu.mixins import ConsumerMixin
+try:
+    from kombu.mixins import ConsumerMixin
+except ImportError:
+    from rpcdaemon.lib.mixins import ConsumerMixin
+
 from kombu import Connection
 
 # My libs
@@ -36,16 +40,21 @@ class Worker(ConsumerMixin, Thread):
                              handler=handler)
 
     def on_connection_error(self, exc, interval):
-        self.is_connected = False
+        if self.is_connected is True:
+            self.logger.warn('Retrying AMQP connection')
+            self.is_connected = False
+            # force a reconnect, rather than using old connection
+            self._default_channel = None
+
         if self.should_stop:
             self.logger.warn('Disconnected AMQP')
         else:
-            self.logger.warn('Retrying AMQP connection')
             self.connection.ensure_connection()
 
     def on_connection_revived(self):
-        self.logger.warn('AMQP connection re-established')
-        self.is_connected = True
+        if self.is_connected is False:
+            self.logger.warn('AMQP connection re-established')
+            self.is_connected = True
 
     def get_consumers(self, Consumer, channel):
         return [
