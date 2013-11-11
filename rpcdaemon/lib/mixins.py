@@ -52,6 +52,8 @@ class ConsumerMixin(object):
         pass
 
     def run(self):
+        self._default_channel = None
+
         while not self.should_stop:
             try:
                 if self.restart_limit.can_consume(1):
@@ -83,6 +85,7 @@ class ConsumerMixin(object):
                         elapsed = 0
 
     def on_connection_error(self, exc, interval):
+        self._default_channel = None
         self.error("Broker connection error: %r. "
                    "Trying again in %s seconds.", exc, interval)
 
@@ -93,7 +96,10 @@ class ConsumerMixin(object):
                                    self.connect_max_retries)
             self.on_connection_revived()
             self.info("Connected to %s", conn.as_uri())
-            channel = conn.default_channel
+            if self._default_channel is None:
+                self._default_channel = conn.channel()
+
+            channel = self._default_channel
             with self._consume_from(*self.get_consumers(
                     partial(Consumer, channel), channel)) as consumers:
                 yield conn, channel, consumers
