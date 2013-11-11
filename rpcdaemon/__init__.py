@@ -40,9 +40,12 @@ class Worker(ConsumerMixin, Thread):
                              handler=handler)
 
     def on_connection_error(self, exc, interval):
-        self.is_connected = False
-        # force a reconnect, rather than using old connection
-        self._default_connection = None
+        if self.is_connected:
+            self.logger.warn('Retrying AMQP connection')
+            self.is_connected = False
+            # force a reconnect, rather than using old connection
+            self._default_channel = None
+
         if self.should_stop:
             self.logger.warn('Disconnected AMQP')
         else:
