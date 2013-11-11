@@ -13,6 +13,9 @@ class Logger(logging.Logger):
             handler=None
     ):
         # Call super
+        if isinstance(level, basestring):
+            level = getattr(logging, level.upper())
+
         logging.Logger.__init__(self, name, level)
         self.handler = handler if handler else logging.FileHandler(path)
         self.handler.setFormatter(logging.Formatter(format, datefmt))

@@ -78,7 +78,7 @@ class Monitor(DaemonContext):
         # Initialize logger
         self.logger = Logger(
             name='rpcdaemon',
-            level = getattr(logging, self.config['loglevel'].upper()),
+            level = self.config['loglevel'],
             path = self.config['logfile'] if daemonize else None,
             handler = None if daemonize else logging.StreamHandler()
         )
