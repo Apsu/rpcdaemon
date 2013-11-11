@@ -82,7 +82,7 @@ class DHCPAgent(NeutronAgent, RPC):
 
         # Get all networks
         networks = dict([(network['id'], network)
-                         for networks in
+                         for network in
                          self.client.list_networks()['networks']])
 
         self.logger.debug('All Networks: %s' % networks.keys())
