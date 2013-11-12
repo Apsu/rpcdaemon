@@ -3,7 +3,9 @@ from uuid import uuid4
 from itertools import product
 
 # Neutron Agent superclass
-from rpcdaemon.lib.neutronagent import NeutronAgent
+from rpcdaemon.lib.neutronagent import NeutronAgent, NeutronAgentException
+
+
 
 # RPC superclass
 from rpcdaemon.lib.rpc import RPC
@@ -73,10 +75,16 @@ class DHCPAgent(NeutronAgent, RPC):
                         str(agent['id'])
                     )
                 )
-                self.client.remove_network_from_dhcp_agent(
-                    agent['id'],
-                    network['id']
-                )
+                # Races between multiple rpc agents can make this
+                # crash
+                try:
+                    self.client.remove_network_from_dhcp_agent(
+                        agent['id'],
+                        network['id']
+                    )
+                except NeutronAgentException:
+                    self.logger.warn('Network %s already removed from agent %s' % (
+                        network['id'], agent['id']))
 
         self.logger.debug('Targets: %s' % targets.keys())
 
@@ -113,10 +121,17 @@ class DHCPAgent(NeutronAgent, RPC):
                             str(target)
                         )
                     )
-                    self.client.add_network_to_dhcp_agent(
-                        target,
-                        {'network_id': network}
-                    )
+                    # This can race between multiple rpcdaemon
+                    # instances
+                    try:
+                        self.client.add_network_to_dhcp_agent(
+                            target,
+                            {'network_id': network}
+                        )
+                    except NeutronAgentException:
+                        self.logger.warn('Network %s already added to agent %s' % (
+                            network, target))
+                        pass
         # No agents, any networks?
         elif networks:
             self.logger.warn('No agents found to schedule networks to.')
