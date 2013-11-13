@@ -17,3 +17,6 @@ class Config(RawConfigParser):
 
     def section(self, section='DEFAULT'):
         return Config(self.path, section)
+
+    def get(self, item, default):
+        return self._config[item] if item in self._config else default

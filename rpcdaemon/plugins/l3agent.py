@@ -21,6 +21,9 @@ class L3Agent(NeutronAgent, RPC):
         # Grab a copy of our config section
         self.config = config.section('L3Agent')
 
+        # grab relevant settings
+        queue_expire = self.config.get('queue_expire', 60)
+
         # Initialize logger
         self.logger = Logger(
             name='l3agent',
@@ -47,7 +50,10 @@ class L3Agent(NeutronAgent, RPC):
                 'name': 'rpcdaemon-l3_%s' % uuid4(),
                 'auto_delete': True,
                 'durable': False,
-                'routing_key': 'q-plugin'
+                'routing_key': 'q-plugin',
+                'queue_arguments'={
+                    'x-expires': int(queue_expire * 1000),
+                }
             }
         )
 
