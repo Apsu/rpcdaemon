@@ -51,7 +51,7 @@ class L3Agent(NeutronAgent, RPC):
                 'auto_delete': True,
                 'durable': False,
                 'routing_key': 'q-plugin',
-                'queue_arguments'={
+                'queue_arguments': {
                     'x-expires': int(queue_expire * 1000),
                 }
             }
