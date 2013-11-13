@@ -3,7 +3,7 @@ from uuid import uuid4
 from itertools import cycle
 
 # Neutron Agent superclass
-from rpcdaemon.lib.neutronagent import NeutronAgent
+from rpcdaemon.lib.neutronagent import NeutronAgent, NeutronAgentException
 
 # RPC superclass
 from rpcdaemon.lib.rpc import RPC
@@ -20,6 +20,9 @@ class L3Agent(NeutronAgent, RPC):
     def __init__(self, connection, config, handler=None):
         # Grab a copy of our config section
         self.config = config.section('L3Agent')
+
+        # grab relevant settings
+        queue_expire = self.config.get('queue_expire', 60)
 
         # Initialize logger
         self.logger = Logger(
@@ -47,7 +50,10 @@ class L3Agent(NeutronAgent, RPC):
                 'name': 'rpcdaemon-l3_%s' % uuid4(),
                 'auto_delete': True,
                 'durable': False,
-                'routing_key': 'q-plugin'
+                'routing_key': 'q-plugin',
+                'queue_arguments': {
+                    'x-expires': int(queue_expire * 1000),
+                }
             }
         )
 
@@ -81,7 +87,7 @@ class L3Agent(NeutronAgent, RPC):
         # Get routers on agents
         binds = dict([(router['id'], router) for target in targets
                       for router in
-                      self.client.list_routers_on_l3_agents(target)['routers']])
+                      self.client.list_routers_on_l3_agent(target)['routers']])
 
         self.logger.debug('Bound Routers: %s' % binds.keys())
 
@@ -110,10 +116,15 @@ class L3Agent(NeutronAgent, RPC):
                         str(target)
                     )
                 )
-                self.client.add_router_to_l3_agent(
-                    target,
-                    {'router_id': router}
-                )
+                # this can cause errors if multiple rpcdaemons are running
+                try:
+                    self.client.add_router_to_l3_agent(
+                        target,
+                        {'router_id': router}
+                    )
+                except NeutronAgentException:
+                    self.logger.warn('Router %s already added to agent %s' % (
+                        router, target))
         # No agents, any routers?
         elif routers:
             self.logger.warn('No agents found to schedule routers to.')
