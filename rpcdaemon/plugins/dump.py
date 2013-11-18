@@ -30,7 +30,7 @@ class Dump(RPC):
             self,
             connection,
             exopts={
-                'name': 'neutron',
+                'name': self.config.get('queue', 'neutron'),
                 'durable': False,
                 'type': 'topic'
             },

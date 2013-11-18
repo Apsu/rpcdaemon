@@ -11,9 +11,11 @@ from json import loads
 try:
     from neutronclient.v2_0.client import Client
     from neutronclient.common.exceptions import NeutronException as NeutronAgentException
+    is_neutron = True
 except:
     from quantumclient.v2_0.client import Client
     from quantumclient.common.exceptions import QuantumException as NeutronAgentException
+    is_neutron = False
 
 
 # Generalized neutron agent handler
@@ -54,6 +56,13 @@ class NeutronAgent():
             self.agents[agent['id']] = agent
 
         self.logger.debug('Agents: %s' % agents.keys())
+
+    # queue we should be listening to (neutron vs quantum)
+    # based on imports
+    def event_queue(self):
+        if is_neutron:
+            return 'neutron'
+        return 'quantum'
 
     # Empty default handler
     def handle(self, agent, state):

@@ -44,7 +44,7 @@ class DHCPAgent(NeutronAgent, RPC):
             self,
             connection,
             exopts={
-                'name': 'neutron',
+                'name': self.event_queue(),
                 'durable': False,
                 'type': 'topic'
             },
