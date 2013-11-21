@@ -1,3 +1,5 @@
+import sys
+
 # Threading
 from threading import Semaphore
 
@@ -7,6 +9,9 @@ from datetime import datetime, timedelta
 
 # JSON
 from json import loads
+
+# time.sleep
+from time import sleep
 
 try:
     from neutronclient.v2_0.client import Client
@@ -156,3 +161,27 @@ class NeutronAgent():
                 self.handle(agent, True)
 
         self.lock.release()  # Unlock outside RPC callback
+
+    # some simple wrappers for retryable functions
+    def retryable(self, fn, retries=3, delay=5, on_fail=None):
+        if not on_fail:
+            on_fail = self.reraise
+
+        for attempt in range(0, retries):
+            try:
+                result = fn()
+                return result
+            except Exception as e:
+                self.logger.debug('Retry %d for "%s": %s' % (
+                        attempt + 1, fn.__name__, str(e)))
+                exc_info = sys.exc_info()
+
+            if delay:
+                sleep(delay)
+
+        on_fail(exc_info)
+
+    def reraise(self, exc_info):
+        self.logger.error('Retries exhausted.  Exiting')
+        raise exc_info[0], exc_info[1], exc_info[2]
+

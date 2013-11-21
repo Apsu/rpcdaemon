@@ -66,13 +66,15 @@ class DHCPAgent(NeutronAgent, RPC):
                       for target in self.agents.values()
                       if target['alive']])
 
+
+        networklist = self.retryable(
+            lambda: self.client.list_networks_on_dhcp_agent(
+                agent['id']))['networks']
+
+                
         # If agent is down, remove networks first
         if not state:
-            for network in (
-                self.client.list_networks_on_dhcp_agent(
-                    agent['id']
-                )['networks']
-            ):
+            for network in networklist:
                 self.logger.info(
                     'Removing network %s from %s/%s [%s]' % (
                         network['id'],
@@ -83,31 +85,32 @@ class DHCPAgent(NeutronAgent, RPC):
                 )
                 # Races between multiple rpc agents can make this
                 # crash
-                try:
-                    self.client.remove_network_from_dhcp_agent(
+                msg = 'Network %s already removed from agent %s' % (
+                    network['id'], agent['id'])
+
+                self.retryable(
+                    lambda: self.client.remove_network_from_dhcp_agent(
                         agent['id'],
-                        network['id']
-                    )
-                except NeutronAgentException:
-                    self.logger.warn('Network %s already removed from agent %s' % (
-                        network['id'], agent['id']))
+                        network['id']),
+                    retries=1, delay=0, on_fail=lambda x: self.warn(msg))
 
         self.logger.debug('Targets: %s' % targets.keys())
 
         # Get all networks
         networks = dict([(network['id'], network)
-                         for network in
-                         self.client.list_networks()['networks']])
+                         for network in networklist])
 
         self.logger.debug('All Networks: %s' % networks.keys())
+
 
         # Map agents to missing networks
         mapping = dict([(target, [
                         missing for missing in networks
                         if missing not in [
                             network['id'] for network in
-                            self.client.list_networks_on_dhcp_agent(target)
-                            ['networks']
+                            self.retryable(
+                                lambda: self.client.list_networks_on_dhcp_agent(
+                                    target))['networks']
                         ]
                     ]) for target in targets])
 
@@ -129,15 +132,13 @@ class DHCPAgent(NeutronAgent, RPC):
                     )
                     # This can race between multiple rpcdaemon
                     # instances
-                    try:
-                        self.client.add_network_to_dhcp_agent(
-                            target,
-                            {'network_id': network}
-                        )
-                    except NeutronAgentException:
-                        self.logger.warn('Network %s already added to agent %s' % (
-                            network, target))
-                        pass
+                    msg = 'Network %s already added to agent %s' % (network, target)
+
+                    self.retryable(
+                        lambda: self.client.add_network_to_dhcp_agent(
+                            target, {'network_id': network}),
+                        retries=1, delay=0, on_fail=lambda x:self.logger.warn(msg))
+
         # No agents, any networks?
         elif networks:
             self.logger.warn('No agents found to schedule networks to.')

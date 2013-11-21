@@ -66,9 +66,10 @@ class L3Agent(NeutronAgent, RPC):
 
         # If agent is down, remove routers first
         if not state:
-            for router in (
-                self.client.list_routers_on_l3_agent(agent['id'])['routers']
-            ):
+            routerlist = self.retryable(
+                lambda: self.client.list_routers_on_l3_agent(agent['id']))['routers']
+
+            for router in routerlist:
                 self.logger.info(
                     'Removing router %s from %s/%s [%s]' % (
                         router['id'],
@@ -77,23 +78,27 @@ class L3Agent(NeutronAgent, RPC):
                         str(agent['id'])
                     )
                 )
-                self.client.remove_router_from_l3_agent(
-                    agent['id'],
-                    router['id']
-                )
+
+                self.retryable(
+                    lambda: self.client.remove_router_from_l3_agent(agent['id'],
+                                                                    router['id']))
 
         self.logger.debug('Targets: %s' % targets.keys())
 
+        # get all routers
+        routerlist = self.retryable(
+            lambda: self.client.list_routers())['routers']
+
         # Get routers on agents
         binds = dict([(router['id'], router) for target in targets
-                      for router in
-                      self.client.list_routers_on_l3_agent(target)['routers']])
+                      for router in routerlist])
+
 
         self.logger.debug('Bound Routers: %s' % binds.keys())
 
         # And routers not on agents
         routers = dict([(router['id'], router)
-                        for router in self.client.list_routers()['routers']
+                        for router in routerlist
                         if not router['id'] in binds])
 
         self.logger.debug('Free Routers: %s' % routers.keys())
@@ -117,14 +122,15 @@ class L3Agent(NeutronAgent, RPC):
                     )
                 )
                 # this can cause errors if multiple rpcdaemons are running
-                try:
-                    self.client.add_router_to_l3_agent(
+                msg = 'Router %s already added to agent %s' % (router, target)
+
+                self.retryable(
+                    lambda: self.client.add_router_to_l3_agent(
                         target,
-                        {'router_id': router}
-                    )
-                except NeutronAgentException:
-                    self.logger.warn('Router %s already added to agent %s' % (
-                        router, target))
+                        {'router_id': router}),
+                    retries=1, delay=0, 
+                    on_fail=lambda x:self.logger.warn(msg))
+
         # No agents, any routers?
         elif routers:
             self.logger.warn('No agents found to schedule routers to.')
