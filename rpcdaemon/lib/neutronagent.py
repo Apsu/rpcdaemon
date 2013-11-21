@@ -118,7 +118,6 @@ class NeutronAgent():
                     self.agents[agent['id']]['heartbeat_timestamp'] = (
                         dateparse(time)
                     )
-                    self.agents[agent['id']]['alive'] = True
 
                 self.lock.release()  # Unlock inside RPC callback
 
@@ -128,6 +127,7 @@ class NeutronAgent():
     # Called in loop
     def check(self):
         self.lock.acquire()  # Lock outside RPC callback
+
         for agent in self.agents.values():
             # Check timestamp + allowed down time against current time
             if (
@@ -136,26 +136,29 @@ class NeutronAgent():
                     datetime.utcnow()
             ):
                 # Agent is down!
-                self.logger.warn(
-                    '%s/%s [%s]: is down.' % (
-                        agent['host'],
-                        agent['agent_type'],
-                        agent['id']
-                    )
-                )
+                if self.agents[agent['id']]['alive'] is True:
+                    self.logger.warn(
+                        '%s/%s [%s]: is now down.' % (
+                            agent['host'],
+                            agent['agent_type'],
+                            agent['id']
+                            )
+                        )
                 self.agents[agent['id']]['alive'] = False
 
                 # Handle down agent
                 self.handle(agent, False)
             else:
                 # Agent is up!
-                self.logger.debug(
-                    '%s/%s [%s]: is up.' % (
-                        agent['host'],
-                        agent['agent_type'],
-                        agent['id']
-                    )
-                )
+                if self.agents[agent['id']]['alive'] is False:
+                    self.logger.warn(
+                        '%s/%s [%s]: is now up.' % (
+                            agent['host'],
+                            agent['agent_type'],
+                            agent['id']
+                            )
+                        )
+                self.agents[agent['id']]['alive'] = True
 
                 # Handle up agent
                 self.handle(agent, True)
@@ -163,7 +166,7 @@ class NeutronAgent():
         self.lock.release()  # Unlock outside RPC callback
 
     # some simple wrappers for retryable functions
-    def retryable(self, fn, retries=3, delay=5, on_fail=None):
+    def retryable(self, fn, retries=10, delay=3, on_fail=None):
         if not on_fail:
             on_fail = self.reraise
 
@@ -172,8 +175,8 @@ class NeutronAgent():
                 result = fn()
                 return result
             except Exception as e:
-                self.logger.debug('Retry %d for "%s": %s' % (
-                        attempt + 1, fn.__name__, str(e)))
+                self.logger.warn('Retry %d: %s' % (
+                        attempt + 1, str(e)))
                 exc_info = sys.exc_info()
 
             if delay:
