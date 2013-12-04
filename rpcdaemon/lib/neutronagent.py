@@ -47,7 +47,8 @@ class NeutronAgent():
             username=self.config['admin_user'],
             password=self.config['admin_password'],
             tenant_name=self.config['admin_tenant_name'],
-            auth_url=self.config['auth_url']
+            auth_url=self.config['auth_url'],
+            timeout=10
         )
 
         # Populate agents and states
@@ -187,4 +188,3 @@ class NeutronAgent():
     def reraise(self, exc_info):
         self.logger.error('Retries exhausted.  Exiting')
         raise exc_info[0], exc_info[1], exc_info[2]
-
