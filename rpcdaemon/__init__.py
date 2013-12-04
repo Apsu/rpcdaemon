@@ -90,7 +90,7 @@ class Monitor(DaemonContext):
         self.pidfile = PIDFile(self.config['pidfile']) if daemonize else None;
 
         # TOOD: plugin.check thread pool?
-        self.timeout = 1
+        self.timeout = int(self.config.get('check_interval', 1))
 
         # Clamp in case we exit before worker exists
         self.worker = None
