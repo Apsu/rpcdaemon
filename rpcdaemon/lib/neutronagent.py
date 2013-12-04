@@ -25,7 +25,7 @@ except:
 
 # Generalized neutron agent handler
 class NeutronAgent():
-    def __init__(self, config, agent_type):
+    def __init__(self, config, plugin_config, agent_type):
         # Config blob for us
         self.config = config
 
@@ -48,7 +48,7 @@ class NeutronAgent():
             password=self.config['admin_password'],
             tenant_name=self.config['admin_tenant_name'],
             auth_url=self.config['auth_url'],
-            timeout=10
+            timeout=int(plugin_config.get('timeout', 20))
         )
 
         # Populate agents and states

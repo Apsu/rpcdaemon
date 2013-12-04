@@ -37,7 +37,7 @@ class DHCPAgent(NeutronAgent, RPC):
         self.qconfig = Config(self.config['conffile'], 'AGENT')
 
         # Initialize super
-        NeutronAgent.__init__(self, self.qconfig, 'DHCP agent')
+        NeutronAgent.__init__(self, self.qconfig, self.config, 'DHCP agent')
 
         # Initialize RPC bits
         RPC.__init__(
@@ -71,7 +71,7 @@ class DHCPAgent(NeutronAgent, RPC):
             lambda: self.client.list_networks_on_dhcp_agent(
                 agent['id']))['networks']
 
-                
+
         # If agent is down, remove networks first
         if not state:
             for network in networklist:

@@ -35,7 +35,7 @@ class L3Agent(NeutronAgent, RPC):
         self.qconfig = Config(self.config['conffile'], 'AGENT')
 
         # Initialize super
-        NeutronAgent.__init__(self, self.qconfig, 'L3 agent')
+        NeutronAgent.__init__(self, self.qconfig, self.config, 'L3 agent')
 
         # Initialize RPC bits
         RPC.__init__(
@@ -90,9 +90,9 @@ class L3Agent(NeutronAgent, RPC):
             lambda: self.client.list_routers())['routers']
 
         # Get routers on agents
-        binds = dict([(router['id'], router) 
+        binds = dict([(router['id'], router)
                       for target in targets
-                      for router in 
+                      for router in
                       self.retryable(lambda: self.client.list_routers_on_l3_agent(target))['routers']])
 
         self.logger.debug('Bound Routers: %s' % binds.keys())
@@ -129,7 +129,7 @@ class L3Agent(NeutronAgent, RPC):
                     lambda: self.client.add_router_to_l3_agent(
                         target,
                         {'router_id': router}),
-                    retries=1, delay=0, 
+                    retries=1, delay=0,
                     on_fail=lambda x:self.logger.warn(msg))
 
         # No agents, any routers?
