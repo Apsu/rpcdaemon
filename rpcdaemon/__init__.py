@@ -126,7 +126,7 @@ class Monitor(DaemonContext):
                         fromlist=[module]
                     ),
                     module)
-                for module in self.config['plugins'].split(',')
+                for module in self.config['plugins'].split()
             ]
         ]
 
