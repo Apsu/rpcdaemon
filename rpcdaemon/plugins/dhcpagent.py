@@ -24,7 +24,7 @@ class DHCPAgent(NeutronAgent, RPC):
         self.config = config.section('DHCPAgent')
 
         # grab relevant settings
-        queue_expire = self.config.get('queue_expire', 60)
+        queue_expire = int(self.config.get('queue_expire', 60))
 
         # Initialize logger
         self.logger = Logger(
@@ -54,7 +54,7 @@ class DHCPAgent(NeutronAgent, RPC):
                 'durable': False,
                 'routing_key': 'q-plugin',
                 'queue_arguments': {
-                    'x-expires': int(queue_expire * 1000),
+                    'x-expires': queue_expire * 1000,
                 }
             }
         )
