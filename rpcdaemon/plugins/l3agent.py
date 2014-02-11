@@ -64,6 +64,10 @@ class L3Agent(NeutronAgent, RPC):
                         for target in self.agents.values()
                         if target['alive']])
 
+        if not targets:
+            self.logger.warn('No agents up; exiting handler early.')
+            return
+
         # If agent is down, remove routers first
         if not state:
             routerlist = self.retryable(

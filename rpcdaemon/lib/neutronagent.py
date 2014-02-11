@@ -169,7 +169,7 @@ class NeutronAgent():
     # some simple wrappers for retryable functions
     def retryable(self, fn, retries=10, delay=3, on_fail=None):
         if not on_fail:
-            on_fail = self.reraise
+            on_fail = self.fail
 
         for attempt in range(0, retries):
             try:
@@ -185,6 +185,6 @@ class NeutronAgent():
 
         on_fail(exc_info)
 
-    def reraise(self, exc_info):
-        self.logger.error('Retries exhausted.  Exiting')
-        raise exc_info[0], exc_info[1], exc_info[2]
+    def fail(self, exc_info):
+        self.logger.debug('Retry exception info: {} {} {}'.format(exc_info[0], exc_info[1], exc_info[2]))
+        self.logger.error('Retries exhausted. Continuing.')
