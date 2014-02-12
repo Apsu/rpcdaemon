@@ -66,6 +66,10 @@ class DHCPAgent(NeutronAgent, RPC):
                       for target in self.agents.values()
                       if target['alive']])
 
+        if not targets:
+            self.logger.debug('No agents up; exiting handler early.')
+            return
+
 
         networklist = self.retryable(
             lambda: self.client.list_networks_on_dhcp_agent(
