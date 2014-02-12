@@ -67,7 +67,7 @@ class DHCPAgent(NeutronAgent, RPC):
                       if target['alive']])
 
         if not targets:
-            self.logger.warn('No agents up; exiting handler early.')
+            self.logger.debug('No agents up; exiting handler early.')
             return
 
 
