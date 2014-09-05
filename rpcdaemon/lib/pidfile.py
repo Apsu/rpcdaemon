@@ -1,4 +1,5 @@
 import os
+import stat
 
 
 class PIDFile():
@@ -12,10 +13,14 @@ class PIDFile():
         if not os.path.exists(self.path):
             # Create it
             with open(self.path, 'w') as pidfile:
+                # Set pidfile permissions to 0600, -rw-------
+                os.fchmod(pidfile.fileno(), stat.S_IRUSR | stat.S_IWUSR)
                 pidfile.write(str(os.getpid()) + '\n')
         else:
             # Open for read/write, so we can do either
             with open(self.path, 'rw+') as pidfile:
+                # Just in case, set pidfile permissions to 0600, -rw-------
+                os.fchmod(pidfile.fileno(), stat.S_IRUSR | stat.S_IWUSR)
                 # Get PID from file, stripping whitespace and leading 0s
                 pid = str(int(pidfile.readline().strip()))
                 # pidfile and process exist
