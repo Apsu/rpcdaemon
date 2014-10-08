@@ -96,7 +96,7 @@ class DHCPAgent(NeutronAgent, RPC):
                     lambda: self.client.remove_network_from_dhcp_agent(
                         agent['id'],
                         network['id']),
-                    retries=1, delay=0, on_fail=lambda x: self.warn(msg))
+                    retries=1, delay=0, on_fail=lambda x: self.logger.warn(msg))
 
         self.logger.debug('Targets: %s' % targets.keys())
 
